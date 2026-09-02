@@ -1,0 +1,66 @@
+# norirobotics-mcp — Full Reference
+
+FastMCP 3.4 MCP server for the Nori Robotics A3: a $1,688, 19-DOF wheeled bimanual home robot
+from Nori Robotics (YC S26, San Francisco), shipping Fall 2026.
+
+## Why this exists
+
+Wraps `nori-sdk` (PyPI, Apache-2.0), Nori Robotics' real Python client, which talks to the
+robot over a WebRTC data channel with Supabase Realtime signaling — there is no serial/USB/ROS
+bridge. No physical unit exists in this household yet, so every session-gated tool defaults to
+`nori_sdk.mock.mock_session()`, the SDK's own declared mock, until real credentials are set.
+
+## Hardware (for context, not controlled directly by this repo's code — see nori_info)
+
+19 DOF: 2x 7+1-DOF arms (55cm reach, 1.5kg payload each), 1 telescoping lift axis (69-145cm),
+differential-drive base. Feetech STS-series bus servos (torque-graded per joint). Soft-TPU
+gripper with sensorless force sensing. Raspberry Pi 5 (4GB) onboard compute — bus I/O and
+control loop only, all policy inference off-board. 4x 720p cameras, 2D LiDAR, dual mic array,
+432Wh battery (6-8h).
+
+## Tools
+
+### nori_info(operation="info"|"specs"|"sdk_links"|"predecessor"|"community"|"actuator_upgrade"|"fleet_peers")
+No session required. Returns static reference data sourced from
+mcp-central-docs/projects/norirobotics-mcp/RESEARCH.md.
+
+### nori_session(operation="connect"|"disconnect"|"status"|"wait_ready", force_mock=False)
+Opens/closes/inspects the one process-wide session. `connect` picks real nori_sdk.RemoteTeleop
+when NORI_MCP_SUPABASE_URL + NORI_MCP_SUPABASE_ANON_KEY + NORI_MCP_ROBOT_ROOM are all set,
+otherwise nori_sdk.mock.mock_session(). Idempotent.
+
+### nori_control(operation=..., payload, targets, side, position_m, orientation_xyzw, arm, duration, wait, timeout)
+Requires an open session. Motion: jog, set_jog, clear_jog, action, pose. Safety: estop,
+estop_confirmed, reset_latch, reset_arm. Every op maps 1:1 onto a nori_sdk.RemoteTeleop method.
+
+### nori_recording(operation=..., task, role, kbps, paused, track_timeout)
+Requires an open session. `operation` maps 1:1 onto nori_sdk's own RecordVerb literal
+(session_start/episode_start/episode_stop/episode_discard/session_end/session_discard/start/
+stop/discard/discard_last/status) — episode_start is what actually flips recording=true;
+persisted server-side in LeRobot-compatible format, feeding vla-mcp / any Hugging Face LeRobot
+training pipeline. snapshot/frames for video, set_bitrate/set_paused for the live stream.
+
+### nori_help() / nori_shutdown()
+Quick reference and clean session teardown (does not stop the MCP server process).
+
+## Fleet integration
+
+Registers with robotics-mcp (physical + virtual robot hub). Pairs with teleoperator-mcp
+(WebXR teleop — Nori's own control path is WebRTC remote-teleop, a natural fit for VR-driven
+demonstration collection instead of building a second teleop path). Feeds vla-mcp (logged
+Alpha/Shelfware, never used in production — Nori LeRobot recordings are its first plausible
+real workload). Related to universal-actuator-mcp for any future Feetech-to-QDD actuator
+upgrade (see nori_info(operation="actuator_upgrade") — CubeMars/MyActuator named on the HN
+launch thread, no fabricated BOM). Closest structural precedent in the fleet: bumi-mcp
+(specs+OSS-info now, physical control gated behind a verified bridge).
+
+## Ports
+
+11970 backend (FastAPI + FastMCP HTTP /mcp + REST /api/*), 11971 frontend (Vite React).
+
+## Honesty notes for agents
+
+Do not fabricate a local serial/ROS/REST API for the A3 — there isn't one; nori-sdk over
+WebRTC/Supabase is the only real integration surface. HF (Hugging Face) parentage is
+protocol-level (LeRobot dataset format compatibility via the XLeRobot/SO-101 lineage), not a
+confirmed direct Nori<->HF publishing relationship — re-verify before stating otherwise.

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "name": "norirobotics-mcp",
+  "description": "Nori Robotics A3 bimanual home robot MCP: specs/SDK/lineage/community knowledge, live nori-sdk session control (WebRTC + Supabase, mock-first pre-hardware), motion/safety, LeRobot-format recording; FastMCP 3.4 + dashboard 11970/11971.",
+  "repository": {
+    "url": "https://github.com/sandraschi/norirobotics-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "norirobotics-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "keywords": [
+    "nori",
+    "nori-robotics",
+    "a3",
+    "humanoid",
+    "bimanual",
+    "lerobot",
+    "robotics",
+    "mcp",
+    "fastmcp",
+    "fleet"
+  ]
+}

@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "norirobotics-mcp"
+version = "0.1.0"
+description = "FastMCP 3.4 MCP server for the Nori Robotics A3 bimanual home robot (nori-sdk WebRTC teleop, LeRobot-format recording, fleet virtual-twin/actuator guidance)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Sandra Schipal" }]
+dependencies = [
+    "fastmcp>=3.4.4,<4",
+    "httpx>=0.27.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "prefab-ui>=0.14.0",
+    "nori-sdk[all]>=1.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sandraschi/norirobotics-mcp"
+Repository = "https://github.com/sandraschi/norirobotics-mcp"
+Issues = "https://github.com/sandraschi/norirobotics-mcp/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.16.0,<0.17",
+]
+
+[project.scripts]
+norirobotics-mcp = "norirobotics_mcp.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+norirobotics_mcp = ["data/*.json"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "S", "UP", "RUF"]
+ignore = ["S104", "S310", "S311", "B008", "B904", "E501", "RUF012", "S101", "S110"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.0,<0.17",
+]

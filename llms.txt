@@ -1,0 +1,20 @@
+# norirobotics-mcp
+
+> FastMCP 3.4 MCP for the **Nori Robotics A3** bimanual home robot: specs/SDK/lineage/community knowledge (no session needed), live `nori-sdk` session control over WebRTC + Supabase (mock-first — no unit exists until Fall 2026 shipment), motion/safety, LeRobot-format episode recording.
+
+## Repo
+
+- https://github.com/sandraschi/norirobotics-mcp
+
+## Run
+
+- stdio/HTTP: `uv run norirobotics-mcp` → HTTP `11970`, MCP path `/mcp`
+- Web: `web_sota/start.ps1` → Vite `11971` (proxies `/api`, `/mcp`)
+
+## Tools
+
+- `nori_info(operation=...)` — info | specs | sdk_links | predecessor | community | actuator_upgrade | fleet_peers
+- `nori_session(operation=...)` — connect | disconnect | status | wait_ready
+- `nori_control(operation=...)` — jog | set_jog | clear_jog | action | pose | estop | estop_confirmed | reset_latch | reset_arm
+- `nori_recording(operation=...)` — nori_sdk RecordVerb (session_start | episode_start | episode_stop | ... | status) | snapshot | frames | set_bitrate | set_paused
+- `nori_help()`, `nori_shutdown()`
