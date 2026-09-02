@@ -1,5 +1,30 @@
 # Changelog
 
+## [Unreleased] — 2026-09-02 (Z-up/Y-up axis fix)
+
+### Fixed — model was actually Z-up in a Y-up viewer, masked by camera framing
+- MuJoCo/URDF/ROS geometry is Z-up; glTF (and everything reading it — Three.js, Unity,
+  Resonite's FrooxEngine) is Y-up. Checked `trimesh.exchange.gltf` source directly: it applies
+  no axis conversion on export, ever — coordinates pass through verbatim. Every export so far
+  (flattened GLB, rig GLB, Resonite mesh-JSON) was silently Z-up, and the web viewer's
+  arbitrary per-axis camera-offset weighting in `resetView()` (z-coefficient largest) happened
+  to produce a passably "upright-looking" 3/4 view anyway — real bug, not a false alarm, just
+  not visually obvious until orbiting the camera or checking node coordinates directly.
+- `scripts/export_posed_mesh.py`: added `ZUP_TO_YUP`, a single -90°-about-X rotation
+  ((x,y,z) → (x,z,−y), a proper rotation, no mirroring/winding issues), applied once via
+  `Trimesh.apply_transform`/`Scene.apply_transform` at the very end of each export path —
+  flattened GLB, rig GLB, and (inherited automatically) the Resonite mesh-JSON. Verified via
+  direct Three.js `GLTFLoader` + world-position checks: `left_wheel_link`/`right_wheel_link`
+  now sit near Y=0.076 (floor), `lift_top_link` at Y=0.43, `left_shoulder_pitch_link` at
+  Y=0.52 — correct low-to-high ordering.
+- `bot-viewer.ts`: `resetView()`'s camera-offset coefficients rebalanced (0.8/0.6/0.8) now
+  that Y is genuinely the vertical axis for every future model this pipeline exports, not
+  tuned around one axis's incorrect data.
+- The URDF's own zero-pose (`qpos0`) has both arms fully extended sideways — a documented,
+  intentional characteristic (`nori_pico`/xacro comments call the all-zeros pose "rank
+  deficient," extended by design, not an error) — this is what "T-pose" renders in the viewer
+  are actually showing, not a rig fault.
+
 ## [Unreleased] — 2026-09-02 (viewer lighting)
 
 ### Improved — 3D Viewer lighting

@@ -36,6 +36,21 @@ import numpy as np
 import trimesh
 import trimesh.transformations as tf
 
+# MuJoCo/URDF/ROS are Z-up; glTF (and everything that reads it - Three.js, Unity, Resonite's
+# FrooxEngine) is Y-up. trimesh does NOT convert this on export (checked: no axis-handling
+# code anywhere in trimesh.exchange.gltf) - it writes coordinates through verbatim. Applied
+# once, globally, at the very end via Scene/Trimesh.apply_transform rather than baked into
+# every individual geom/body transform. A -90deg rotation about X: (x,y,z) -> (x,z,-y).
+ZUP_TO_YUP = np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, -1, 0, 0],
+        [0, 0, 0, 1],
+    ],
+    dtype=float,
+)
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 URDF_PATH = REPO_ROOT / "models" / "nori_description" / "urdf" / "nori.expanded.absolute.urdf"
 FLAT_GLB_OUT = REPO_ROOT / "models" / "nori_description" / "nori_a3_posed.glb"
@@ -117,6 +132,7 @@ def main() -> None:
 
     combined = trimesh.util.concatenate(world_parts)
     combined.remove_unreferenced_vertices()
+    combined.apply_transform(ZUP_TO_YUP)
     FLAT_GLB_OUT.parent.mkdir(parents=True, exist_ok=True)
     combined.export(str(FLAT_GLB_OUT))
     print(f"Wrote {FLAT_GLB_OUT} ({FLAT_GLB_OUT.stat().st_size / 1024:.1f} KB, {len(combined.vertices)} verts, {len(combined.faces)} tris)")
@@ -167,6 +183,7 @@ def main() -> None:
         else:
             scene.graph.update(frame_to=name, frame_from=parent_name, matrix=local_mat)
 
+    scene.apply_transform(ZUP_TO_YUP)
     RIG_GLB_OUT.parent.mkdir(parents=True, exist_ok=True)
     RIG_GLB_OUT.write_bytes(trimesh.exchange.gltf.export_glb(scene, include_normals=True))
     body_count = model.nbody - 1

@@ -277,9 +277,9 @@ export class BotViewer {
     const target = this.homeTarget ?? new THREE.Vector3(0, 0, 0);
     const distance = this.homeDistance ?? 2;
     this.camera.position.set(
-      target.x + distance * 0.55,
-      target.y + distance * 0.45,
-      target.z + distance * 0.65,
+      target.x + distance * 0.8,
+      target.y + distance * 0.6,
+      target.z + distance * 0.8,
     );
     this.controls.target.copy(target);
     this.controls.minDistance = distance * 0.1;
