@@ -1,5 +1,6 @@
 import {
   Bot,
+  Box,
   Gauge,
   HelpCircle,
   Home,
@@ -20,6 +21,7 @@ const nav = [
   { to: "/info", label: "Info", icon: Bot },
   { to: "/session", label: "Session", icon: Gauge },
   { to: "/control", label: "Control", icon: Terminal },
+  { to: "/viewer", label: "3D Viewer", icon: Box },
   { to: "/recording", label: "Recording", icon: Video },
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/help", label: "Help", icon: HelpCircle },

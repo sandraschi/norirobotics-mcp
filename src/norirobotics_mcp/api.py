@@ -5,12 +5,14 @@ from __future__ import annotations
 import os
 import time
 from collections import deque
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 import httpx
-from fastapi import APIRouter, FastAPI, Query
+from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from norirobotics_mcp import session_state
 from norirobotics_mcp.config import load_settings
@@ -27,6 +29,8 @@ router = APIRouter(prefix="/api")
 llm_router = APIRouter(prefix="/api/llm")
 
 _start_time = time.time()
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_NORI_A3_GLB = _REPO_ROOT / "models" / "nori_description" / "nori_a3_posed.glb"
 
 
 # ── Ring-buffer activity log ──────────────────────────────────────────
@@ -91,6 +95,13 @@ async def clear_logs() -> dict[str, Any]:
 @router.get("/health")
 async def health() -> dict[str, Any]:
     return {"status": "ok", "service": "norirobotics-mcp"}
+
+
+@router.get("/model/nori_a3.glb")
+async def model_nori_a3() -> FileResponse:
+    if not _NORI_A3_GLB.is_file():
+        raise HTTPException(status_code=404, detail="nori_a3_posed.glb not found — run scripts/export_posed_mesh.py")
+    return FileResponse(_NORI_A3_GLB, media_type="model/gltf-binary")
 
 
 @router.get("/hero")

@@ -8,6 +8,7 @@ import Logging from "@/pages/Logging";
 import { RecordingPage } from "@/pages/RecordingPage";
 import { SessionPage } from "@/pages/SessionPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { ViewerPage } from "@/pages/ViewerPage";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="info" element={<InfoPage />} />
           <Route path="session" element={<SessionPage />} />
           <Route path="control" element={<ControlPage />} />
+          <Route path="viewer" element={<ViewerPage />} />
           <Route path="recording" element={<RecordingPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="help" element={<HelpPage />} />
