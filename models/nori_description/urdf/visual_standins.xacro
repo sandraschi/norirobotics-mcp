@@ -1,0 +1,287 @@
+<?xml version="1.0"?>
+<!--
+  Upper body: torso shell, neck, head.
+
+  NOT visual-only any more, despite the filename. These links carry the real MASS
+  of the upper body, which is ~5 kg and sits high on the lift - leaving it out put
+  the model 5 kg light and its centre of mass 54 mm too low, which is the number
+  that decides whether the robot tips.
+
+  So: the LINKS and their inertials always exist. Only the <visual> geometry is
+  gated behind `visual_standins`, because the shapes are guesses while the mass is
+  not. Turning the placeholder shapes off must not silently delete 5 kg.
+
+  ⚠ NOT MEASURED HARDWARE. These are crude cuboids whose proportions were lifted
+  from the stylised L2 model in the Nori app
+  (frontend/packages/nori-sdk/src/robot-model.ts) purely so the robot reads as a
+  robot instead of a lift column with two arms bolted to it. Every dimension here
+  is a guess. Replace them with measured geometry — or delete them — before
+  anyone treats this model as descriptive of the A3's upper body.
+
+  Deliberately visual-only. Each link has:
+    * <visual>     yes
+    * <collision>  NO — placeholder geometry must never stop a planner, and a
+                   wrong collision volume is worse than none
+    * <inertial>   NO — a link with no inertial is only safe on a FIXED joint,
+                   which every joint below is. Simulators merge fixed-joint
+                   children into the parent, so these add no mass, no inertia,
+                   and no degrees of freedom. Do not reparent one onto a movable
+                   joint without giving it an inertial block first: PhysX and
+                   MuJoCo both reject a massless body on a real joint.
+
+  Axis note: the app model is Y-up with the arms separated along X. This URDF is
+  Z-up with the arms separated along Y, so an app box(w, h, d) becomes a URDF
+  box size="d w h". The numbers below are already converted.
+
+  Enable/disable with the `visual_standins` arg on nori.urdf.xacro:
+      xacro nori.urdf.xacro visual_standins:=false
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    PLACEMENT. The stack hangs off the shoulder axis, not off the lift's top face:
+    the arms are visually centred on the torso's top cap, so that cap's centre is
+    made to coincide with arm_mount_z_from_lift_top (where the shoulder_pitch joints
+    actually are). Nothing here moves the arms - it moves the shell to meet them.
+
+    Neck is parented to the torso and head to the neck, so the three move as one
+    piece and only the torso joint needs positioning.
+  -->
+  <xacro:property name="standin_drop" value="0.000"/>
+
+  <!-- Torso. Width spans the two arm mounts. -->
+  <xacro:property name="torso_x" value="0.120"/>
+  <xacro:property name="torso_y" value="${arm_mount_separation}"/>
+  <xacro:property name="torso_z" value="0.100"/>
+
+  <!--
+    Rounding caps. Radius is deliberately PROUD of the box's half-depth rather than
+    flush with it. Flush means the cylinder is tangent to the box's side faces -
+    grazing, coplanar geometry, which is exactly what was z-fighting on the sides.
+    Standing the cap slightly proud removes the coplanar surfaces AND gives the hard
+    silhouette line where the white cap meets the black body.
+  -->
+  <xacro:property name="torso_cap_proud" value="0.001"/>
+  <xacro:property name="torso_cap_radius" value="${torso_x / 2.0 + torso_cap_proud}"/>
+  <!--
+    The cap is also shortened. Its flat end discs were EXACTLY coplanar with the
+    box's side faces (length == torso_y), and that - not the curved surface - was
+    the z-fighting: two flat polygons at identical y, so the depth buffer cannot
+    order them. Pulling the ends inside the box removes the shared plane entirely.
+  -->
+  <xacro:property name="torso_cap_end_inset" value="0.004"/>
+  <xacro:property name="torso_cap_length" value="${torso_y - 2.0 * torso_cap_end_inset}"/>
+
+  <!-- Per-side inset for the WHITE upper cap along Y.
+       torso_cap_proud already lifts the caps off the front and back faces, so the
+       only surfaces still sharing a plane with the body are the cylinders' flat
+       ENDS against the box's +/-Y faces. At length == torso_y those are exactly
+       coincident, the depth buffer cannot order them, and the seam flickers as the
+       camera moves - worst on the upper cap, where near-white meets dark plastic.
+       1 mm off a 250 mm span is invisible at any viewing distance and unambiguous
+       to the depth test.
+
+       Written as torso_y minus this rather than a literal, so changing
+       arm_mount_separation cannot silently restore the coplanar case. -->
+
+  <xacro:property name="neck_x" value="0.080"/>
+  <xacro:property name="neck_y" value="0.100"/>
+  <xacro:property name="neck_z" value="0.080"/>
+
+  <xacro:property name="head_x" value="0.100"/>
+  <xacro:property name="head_y" value="0.176"/>
+  <xacro:property name="head_z" value="0.117"/>
+  <!-- Head tilts nose-UP. Positive pitch about +Y drops the nose in this frame
+       (X forward, Z up), so an upward tilt is negative. head_pitch_deg lives in
+       properties.xacro: the overhead camera's aim depends on it too. -->
+
+  <!-- Peaked cap over the head, angled up like the L2's visor. Exactly as wide as
+       the head so their side faces line up. -->
+  <xacro:property name="cap_x" value="0.130"/>
+  <xacro:property name="cap_y" value="${head_y}"/>
+  <xacro:property name="cap_z" value="0.016"/>
+  <!-- cap_pitch_deg lives in properties.xacro: the overhead camera is aimed
+       perpendicular to this plate, so the two must not drift apart. -->
+  <xacro:property name="cap_forward" value="0.030"/>
+
+  <!-- Dark rib inset into the white cap: narrower so white shows either side, and
+       thicker so it stands proud top and bottom instead of z-fighting inside. -->
+  <xacro:property name="cap_rib_y" value="${cap_y - 0.030}"/>
+  <xacro:property name="cap_rib_z" value="${cap_z + 0.006}"/>
+  <!-- Pushed forward along the cap's own X. Sharing the white cap's origin and
+       depth left their front and back faces coplanar, which is what was flickering
+       on the peak. Offsetting sinks the rear face inside the cap and stands the
+       front face proud, so neither pair of faces is coincident. -->
+  <xacro:property name="cap_rib_forward" value="0.010"/>
+
+  <!-- Screen on the head's front face. Proud of the face for the same reason. -->
+  <!-- Proportional to the head in BOTH axes, so widening or shortening the head
+       carries the screen (and the eyes on it) with no matching edits. -->
+  <xacro:property name="screen_y" value="${head_y * 0.81}"/>
+  <!-- Proportional to head height so the screen scales with the head instead of
+       needing a matching edit every time. -->
+  <xacro:property name="screen_z" value="${head_z * 0.69}"/>
+  <!-- Sits above the head's mid-line rather than centred on it. -->
+  <xacro:property name="screen_rise" value="${head_z * 0.09}"/>
+  <xacro:property name="screen_thickness" value="0.008"/>
+
+  <!--
+    Eyes, following the L2's stylised model: two upright bars on the face, set
+    either side of centre. Sized off the SCREEN rather than the head, so they stay
+    inside it, and stood proud of the screen face so they read as lit elements on
+    the display rather than z-fighting flush against it.
+  -->
+  <xacro:property name="eye_x" value="0.006"/>
+  <!-- How far the eye's front face stands past the screen's. The rest of its depth
+       sits recessed INSIDE the screen, so the eye looks set into the display rather
+       than stuck on it. Keep this non-zero: at exactly zero the two front faces
+       become coplanar and flicker. -->
+  <xacro:property name="eye_proud" value="0.0015"/>
+  <xacro:property name="eye_y" value="${screen_y * 0.14}"/>
+  <xacro:property name="eye_z" value="${screen_z * 0.55}"/>
+  <xacro:property name="eye_separation" value="${screen_y * 0.44}"/>
+
+  <!-- Mass lives in config/inertial_parameters.yaml like every other link. The
+       inertia tensor is still a uniform-density box over the placeholder envelope,
+       so it is rough - but a rough tensor at the right height beats no mass at
+       all, which is what was there before. -->
+  <xacro:macro name="nori_upper_body">
+
+    <link name="torso_shell_link">
+      <xacro:if value="$(arg visual_standins)">
+      <!-- Body and lower cap are the arms' dark plastic; the upper cap is white, so
+           the torso reads as a pale shoulder line over a dark body. -->
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${torso_x} ${torso_y} ${torso_z}"/>
+        </geometry>
+        <material name="nori_arm_plastic"/>
+      </visual>
+      <!-- A URDF cylinder runs along its own Z, so rpy rolls it 90 deg about X to
+           lay it sideways across the robot's Y. -->
+      <visual>
+        <origin xyz="0 0 ${torso_z / 2.0}" rpy="${nori_pi / 2.0} 0 0"/>
+        <geometry>
+          <!-- Slightly shorter than torso_y so the white cap's ends stop just
+               inside the body's side faces. The lower cap keeps the full width:
+               it shares the box's material, so its coincident ends have no colour
+               difference to flicker between. -->
+          <cylinder radius="${torso_cap_radius}" length="${torso_cap_length}"/>
+        </geometry>
+        <material name="nori_white"/>
+      </visual>
+      <visual>
+        <origin xyz="0 0 ${-torso_z / 2.0}" rpy="${nori_pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${torso_cap_radius}" length="${torso_cap_length}"/>
+        </geometry>
+        <material name="nori_arm_plastic"/>
+      </visual>
+      </xacro:if>
+      <xacro:box_inertial
+        mass="${torso_mass}" length="${torso_x}"
+        width="${torso_y}" height="${torso_z}"
+        origin_xyz="0 0 0"/>
+    </link>
+    <joint name="torso_shell_joint" type="fixed">
+      <parent link="lift_top_link"/>
+      <child link="torso_shell_link"/>
+      <!-- Top cap centre lands on the shoulder axis. -->
+      <origin
+        xyz="0 0 ${arm_mount_z_from_lift_top - torso_z / 2.0 - standin_drop}"
+        rpy="0 0 0"/>
+    </joint>
+
+    <link name="neck_link">
+      <xacro:if value="$(arg visual_standins)">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${neck_x} ${neck_y} ${neck_z}"/>
+        </geometry>
+        <material name="nori_arm_plastic"/>
+      </visual>
+      </xacro:if>
+      <xacro:box_inertial
+        mass="${neck_mass}" length="${neck_x}"
+        width="${neck_y}" height="${neck_z}"
+        origin_xyz="0 0 0"/>
+    </link>
+    <joint name="neck_joint" type="fixed">
+      <parent link="torso_shell_link"/>
+      <child link="neck_link"/>
+      <origin xyz="0 0 ${torso_z / 2.0 + neck_z / 2.0}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="head_link">
+      <xacro:if value="$(arg visual_standins)">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${head_x} ${head_y} ${head_z}"/>
+        </geometry>
+        <material name="nori_white"/>
+      </visual>
+      <!-- Screen: a panel standing proud of the head's front face, sharing the
+           head's frame so it stays square to the face as the head tilts. -->
+      <visual>
+        <origin xyz="${head_x / 2.0} 0 ${screen_rise}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${screen_thickness} ${screen_y} ${screen_z}"/>
+        </geometry>
+        <material name="nori_screen"/>
+      </visual>
+      <!-- Eyes. Their x sits past the screen's front face: head half-depth, plus
+           half the screen's thickness, plus half their own. -->
+      <xacro:macro name="nori_eye" params="y">
+        <visual>
+          <origin
+            xyz="${head_x / 2.0 + screen_thickness / 2.0 + eye_proud - eye_x / 2.0} ${y} ${screen_rise}"
+            rpy="0 0 0"/>
+          <geometry>
+            <box size="${eye_x} ${eye_y} ${eye_z}"/>
+          </geometry>
+          <material name="nori_eye"/>
+        </visual>
+      </xacro:macro>
+      <xacro:nori_eye y="${eye_separation / 2.0}"/>
+      <xacro:nori_eye y="${-eye_separation / 2.0}"/>
+
+      <!-- Cap, pitched up off the head's own (already tilted) frame. -->
+      <visual>
+        <origin
+          xyz="${cap_forward} 0 ${head_z / 2.0}"
+          rpy="0 ${-cap_pitch_deg * deg_to_rad} 0"/>
+        <geometry>
+          <box size="${cap_x} ${cap_y} ${cap_z}"/>
+        </geometry>
+        <material name="nori_white"/>
+      </visual>
+      <visual>
+        <origin
+          xyz="${cap_forward + cap_rib_forward * cos(cap_pitch_deg * deg_to_rad)}
+               0
+               ${head_z / 2.0 + cap_rib_forward * sin(cap_pitch_deg * deg_to_rad)}"
+          rpy="0 ${-cap_pitch_deg * deg_to_rad} 0"/>
+        <geometry>
+          <box size="${cap_x} ${cap_rib_y} ${cap_rib_z}"/>
+        </geometry>
+        <material name="nori_arm_plastic"/>
+      </visual>
+      </xacro:if>
+      <xacro:box_inertial
+        mass="${head_mass}" length="${head_x}"
+        width="${head_y}" height="${head_z}"
+        origin_xyz="0 0 0"/>
+    </link>
+    <joint name="head_joint" type="fixed">
+      <parent link="neck_link"/>
+      <child link="head_link"/>
+      <origin
+        xyz="0 0 ${neck_z / 2.0 + head_z / 2.0}"
+        rpy="0 ${-head_pitch_deg * deg_to_rad} 0"/>
+    </joint>
+
+  </xacro:macro>
+</robot>

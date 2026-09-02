@@ -1,0 +1,12 @@
+Meshes in this directory are covered by the same license as the rest of the
+package:
+
+  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+  SPDX-License-Identifier: CC-BY-NC-SA-4.0
+  Full text: ../LICENSES/LICENSE-CC-BY-NC-SA-4.0.txt
+
+They are simplified visual approximations with internal geometry removed. They
+are not manufacturing data. See ../NOTICE.
+
+The lidar is a primitive stand-in, not the vendor's geometry - no third-party
+meshes are included.

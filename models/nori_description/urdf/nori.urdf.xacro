@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<robot name="nori" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="visual_standins" default="true"/>
+  <xacro:arg name="use_ros2_control" default="false"/>
+  <xacro:arg name="use_left_arm_control" default="false"/>
+  <xacro:arg name="use_dual_arm_control" default="false"/>
+  <!-- Arms, base, and the central lift on one controller_manager. The three branches
+       below are mutually exclusive because each opens a serial port
+       exclusively, and the base motors share bus 1 with the LEFT arm (arm
+       1-8, wheels 9-10). Selecting this uses the combined
+       description, which declares one hardware component per BUS rather than
+       one per subsystem, so nothing contends for the port. -->
+  <xacro:arg name="use_full_robot_control" default="false"/>
+  <xacro:arg name="feetech_bus_port"
+    default="/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B79016521-if00"/>
+  <xacro:arg name="right_feetech_bus_port"
+    default="/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B3E090601-if00"/>
+  <xacro:arg name="feetech_baud_rate" default="1000000"/>
+  <xacro:arg name="feetech_response_timeout_ms" default="12"/>
+  <xacro:arg name="feetech_max_read_failures" default="3"/>
+  <xacro:arg name="pico_port"
+    default="/dev/serial/by-id/usb-Raspberry_Pi_Pico_2_789ADB3F1073A144-if00"/>
+  <xacro:arg name="central_lift_calibration_file"
+    default="~/.config/nori/central_lift_calibration.yaml"/>
+  <xacro:arg name="central_lift_pwm" default="180"/>
+  <xacro:arg name="central_lift_turbo_pwm" default="255"/>
+  <xacro:arg name="central_lift_home_on_activate" default="true"/>
+  <xacro:arg name="left_arm_calibration_file"
+    default="~/.config/nori/left_arm_calibration.yaml"/>
+  <xacro:arg name="right_arm_calibration_file"
+    default="~/.config/nori/right_arm_calibration.yaml"/>
+  <xacro:arg name="arm_acceleration" default="10"/>
+  <xacro:arg name="arm_max_speed_raw" default="200"/>
+  <xacro:arg name="use_mock_hardware" default="false"/>
+  <xacro:arg name="arm_passive_mode" default="false"/>
+  <xacro:arg name="wheel_acceleration" default="20"/>
+  <xacro:arg name="wheel_max_speed_raw" default="2200"/>
+  <xacro:arg name="wheel_velocity_steps_per_raw" default="1.0"/>
+
+  <xacro:include filename="properties.xacro"/>
+  <xacro:include filename="base.xacro"/>
+  <xacro:include filename="arm.xacro"/>
+  <xacro:include filename="sensors.xacro"/>
+  <xacro:include filename="visual_standins.xacro"/>
+  <xacro:include filename="../ros2_control/nori_feetech.ros2_control.xacro"/>
+  <xacro:include filename="../ros2_control/nori_pico.ros2_control.xacro"/>
+
+  <xacro:nori_base/>
+  <!-- Each arm is rotated 180 degrees about the central column, so its local
+       geometry sign is opposite the corresponding robot-frame Y sign. -->
+  <xacro:nori_arm side="left" side_sign="-1.0"/>
+  <xacro:nori_arm side="right" side_sign="1.0"/>
+  <xacro:nori_wrist_camera_frames/>
+  <xacro:nori_sensors/>
+  <!-- Upper body. Always instantiated: these links carry ~5 kg of real mass high
+       on the lift. The `visual_standins` arg only hides their placeholder GEOMETRY
+       (see visual_standins.xacro); it must never remove the mass. -->
+  <xacro:nori_upper_body/>
+
+  <xacro:if value="$(arg use_ros2_control)">
+    <xacro:if value="$(arg use_full_robot_control)">
+      <xacro:nori_pico_ros2_control
+        port="$(arg pico_port)"
+        calibration_file="$(arg central_lift_calibration_file)"
+        command_pwm="$(arg central_lift_pwm)"
+        turbo_pwm="$(arg central_lift_turbo_pwm)"
+        home_on_activate="$(arg central_lift_home_on_activate)"
+        use_mock_hardware="$(arg use_mock_hardware)"/>
+      <xacro:nori_feetech_ros2_control
+        left_bus_port="$(arg feetech_bus_port)"
+        right_bus_port="$(arg right_feetech_bus_port)"
+        left_arm_calibration_file="$(arg left_arm_calibration_file)"
+        right_arm_calibration_file="$(arg right_arm_calibration_file)"
+        baud_rate="$(arg feetech_baud_rate)"
+        response_timeout_ms="$(arg feetech_response_timeout_ms)"
+        max_read_failures="$(arg feetech_max_read_failures)"
+        arm_acceleration="$(arg arm_acceleration)"
+        arm_max_speed_raw="$(arg arm_max_speed_raw)"
+        wheel_acceleration="$(arg wheel_acceleration)"
+        wheel_max_speed_raw="$(arg wheel_max_speed_raw)"
+        wheel_velocity_steps_per_raw="$(arg wheel_velocity_steps_per_raw)"
+        use_mock_hardware="$(arg use_mock_hardware)"
+        passive_mode="$(arg arm_passive_mode)"/>
+    </xacro:if>
+    <xacro:unless value="$(arg use_full_robot_control)">
+    <xacro:if value="$(arg use_dual_arm_control)">
+      <xacro:nori_feetech_dual_arm_ros2_control
+        left_bus_port="$(arg feetech_bus_port)"
+        right_bus_port="$(arg right_feetech_bus_port)"
+        left_arm_calibration_file="$(arg left_arm_calibration_file)"
+        right_arm_calibration_file="$(arg right_arm_calibration_file)"
+        baud_rate="$(arg feetech_baud_rate)"
+        response_timeout_ms="$(arg feetech_response_timeout_ms)"
+        max_read_failures="$(arg feetech_max_read_failures)"
+        arm_acceleration="$(arg arm_acceleration)"
+        arm_max_speed_raw="$(arg arm_max_speed_raw)"
+        use_mock_hardware="$(arg use_mock_hardware)"
+        passive_mode="$(arg arm_passive_mode)"/>
+    </xacro:if>
+    <xacro:unless value="$(arg use_dual_arm_control)">
+      <xacro:if value="$(arg use_left_arm_control)">
+        <xacro:nori_feetech_left_arm_ros2_control
+          left_bus_port="$(arg feetech_bus_port)"
+          left_arm_calibration_file="$(arg left_arm_calibration_file)"
+          baud_rate="$(arg feetech_baud_rate)"
+          response_timeout_ms="$(arg feetech_response_timeout_ms)"
+          max_read_failures="$(arg feetech_max_read_failures)"
+          arm_acceleration="$(arg arm_acceleration)"
+          arm_max_speed_raw="$(arg arm_max_speed_raw)"
+          use_mock_hardware="$(arg use_mock_hardware)"
+          passive_mode="$(arg arm_passive_mode)"/>
+      </xacro:if>
+      <xacro:unless value="$(arg use_left_arm_control)">
+        <xacro:nori_pico_ros2_control
+          port="$(arg pico_port)"
+          calibration_file="$(arg central_lift_calibration_file)"
+          command_pwm="$(arg central_lift_pwm)"
+          turbo_pwm="$(arg central_lift_turbo_pwm)"
+          home_on_activate="$(arg central_lift_home_on_activate)"
+          use_mock_hardware="$(arg use_mock_hardware)"/>
+        <xacro:nori_feetech_base_ros2_control
+          left_bus_port="$(arg feetech_bus_port)"
+          baud_rate="$(arg feetech_baud_rate)"
+          response_timeout_ms="$(arg feetech_response_timeout_ms)"
+          max_read_failures="$(arg feetech_max_read_failures)"
+          wheel_acceleration="$(arg wheel_acceleration)"
+          wheel_max_speed_raw="$(arg wheel_max_speed_raw)"
+          wheel_velocity_steps_per_raw="$(arg wheel_velocity_steps_per_raw)"
+          use_mock_hardware="$(arg use_mock_hardware)"
+          passive_mode="$(arg arm_passive_mode)"/>
+      </xacro:unless>
+    </xacro:unless>
+    </xacro:unless>
+  </xacro:if>
+</robot>

@@ -1,0 +1,65 @@
+# nori_description/materials.yaml — PBR bindings for the visual STL meshes.
+# Consumed by the NoriSDG A4 renderer (registered as assets/robot/nori_urdf_v4).
+#
+# Values are render-validated starting points; week-3 calibration against real
+# footage refines them in place (a _v5 asset bump). The material NAMES and the
+# link->material mapping are the stable contract, not the numbers.
+#
+# 2026-08-19 (new embodiment): the foam body is GONE. The front of the body is
+# plastic, and the telescoping lift is metal.
+
+materials:
+  arm_mat:            # black PLA, printed — unchanged
+    base_color: "#121212FF"
+    roughness: 0.733
+    metallic: 0.0
+  body_mat:           # plastic body shell (was foam until 2026-08-19).
+                      # Plastic is glossier than foam: lower roughness, and a
+                      # real specular lobe the foam never had.
+                      # 2026-08-19 update: the retilted overhead camera sees
+                      # NO body, so roughness is now only calibratable from the
+                      # WRIST views — it is not the top week-3 target it was.
+                      # base_color still matters everywhere though: the shell
+                      # is a large dark occluder/bounce surface beside the
+                      # workspace even when off-camera, and A4's L3 pass needs
+                      # it to cast the shadow the real footage has.
+    base_color: "#1A1A1AFF"
+    roughness: 0.45
+    metallic: 0.0
+  lift_mat:           # metal telescoping lift. Generally out of camera view,
+                      # so this is low-stakes today — but metal is the one
+                      # material where a wrong `metallic` flag changes the
+                      # image qualitatively (mirror-like vs diffuse) rather
+                      # than subtly, so it gets its own entry rather than
+                      # inheriting a plastic default if it ever comes into
+                      # frame.
+                      # NOTE: the lift links carry NO visual mesh in v4, so
+                      # nothing binds this yet — see the asset manifest.
+    base_color: "#8A8A8FFF"
+    roughness: 0.35
+    metallic: 1.0
+
+# link -> material by URDF link name. `default` covers everything not listed
+# (all arm-chain links + camera mounts -> arm_mat, all printed PLA).
+assign:
+  default: arm_mat
+  # body shell (base_shell.stl is the only body geometry that renders today)
+  base_link: body_mat
+  base_footprint: body_mat
+  torso_shell_link: body_mat
+  neck_link: body_mat
+  head_link: body_mat
+  # telescoping lift (metal)
+  lift_bottom_link: lift_mat
+  lift_middle_link: lift_mat
+  lift_top_link: lift_mat
+  # chassis / drive
+  caster_link: body_mat
+  left_caster_wheel_link: body_mat
+  right_caster_wheel_link: body_mat
+  left_wheel_link: body_mat
+  right_wheel_link: body_mat
+  # sensors: barely on camera; body_mat until the gate says otherwise
+  lidar_link: body_mat
+  lidar_scan_link: body_mat
+  imu_link: body_mat

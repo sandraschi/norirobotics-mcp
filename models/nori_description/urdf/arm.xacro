@@ -1,0 +1,415 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    8-DOF arm mounted to the moving top of the central lift. Joint names map
+    to servo bus IDs 1-8 in ../ros2_control/nori_feetech.ros2_control.xacro
+    and must stay in sync with it. Links are named after the joint that moves
+    them.
+
+    Zero pose: each arm downstream of shoulder_roll extends laterally outward,
+    90 degrees from the former hanging pose; the arm-mount and shoulder_pitch
+    frames stay unchanged. Pitch joints rotate about Y, roll about X, and yaw
+    about Z.
+    The wrist stages follow that motion-based convention: wrist_pitch (bus ID 6)
+    is the Y-axis stage and wrist_roll (bus ID 7) is the downstream X-axis
+    stage. Each joint origin lies on its rotation axis, and consecutive origins
+    differ by the local *_drop Z distances in properties.xacro; shoulder_roll
+    additionally carries a mirrored Y offset relative to the shoulder-pitch
+    axis.
+
+    Visuals are per-link STLs (millimetres, exported lying along -Y, origin
+    at the part's lower/child servo axis — except shoulder_pitch, whose
+    origin is its own axis). Both arms reuse one STL set; after each arm's
+    180-degree rotation about the central column, the left arm uses a negative
+    mesh Z scale. That can shade oddly in some renderers; export mirrored
+    copies if it matters. The measured housing envelopes serve as collision
+    and inertial geometry. The gripper is a geared two-finger claw: one
+    servo-driven finger plus an idler finger on a mimic joint.
+
+    Both arms' positive rotation signs are physically commissioned in
+    nori-calibrate-feetech-arm and persisted in their calibration files.
+    Recheck them after mechanical changes; keep URDF axes geometric and correct
+    mounting polarity through the hardware positive_direction parameters.
+  -->
+
+  <!--
+    Mirrored geometry is a real file (`<mesh>_mirrored.stl`), NOT a negative
+    scale factor. Negating an axis reverses triangle winding, which leaves every
+    surface normal pointing inward: RViz tolerates that, Isaac Sim / MuJoCo /
+    glTF and USD exporters frequently do not. Regenerate the mirrored variants
+    with urdf_release/tools/mirror_meshes.py after re-exporting any mesh.
+  -->
+  <xacro:macro name="nori_arm_mesh_visual"
+      params="mesh xyz side_sign rpy:='${-nori_pi / 2.0} 0 0'">
+    <visual>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <geometry>
+        <mesh
+          filename="package://nori_description/meshes/visual/${mesh}${'_mirrored' if side_sign &lt; 0 else ''}.stl"
+          scale="${arm_mesh_scale} ${arm_mesh_scale} ${arm_mesh_scale}"/>
+      </geometry>
+      <material name="nori_arm_plastic"/>
+    </visual>
+  </xacro:macro>
+
+  <xacro:macro name="nori_shoulder_pitch_link" params="side side_sign">
+    <link name="${side}_shoulder_pitch_link">
+      <xacro:nori_arm_mesh_visual mesh="shoulder_pitch"
+        xyz="0 ${side_sign * shoulder_pitch_mesh_y_offset} 0"
+        side_sign="${side_sign}"/>
+      <collision>
+        <origin xyz="0 ${side_sign * shoulder_pitch_body_y_from_inside_face} 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${shoulder_pitch_depth} ${shoulder_pitch_width} ${shoulder_pitch_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${shoulder_pitch_mass}"
+        length="${shoulder_pitch_depth}"
+        width="${shoulder_pitch_width}"
+        height="${shoulder_pitch_height}"
+        origin_xyz="0 ${side_sign * shoulder_pitch_body_y_from_inside_face} 0"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="nori_shoulder_roll_link" params="side side_sign:=1.0">
+    <link name="${side}_shoulder_roll_link">
+      <xacro:nori_arm_mesh_visual mesh="shoulder_roll"
+        xyz="0 0 ${-bicep_yaw_drop}" side_sign="${side_sign}"/>
+      <collision>
+        <origin xyz="0 0 ${shoulder_roll_body_z_from_axis}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${shoulder_roll_depth} ${shoulder_roll_width} ${shoulder_roll_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${shoulder_roll_mass}"
+        length="${shoulder_roll_depth}"
+        width="${shoulder_roll_width}"
+        height="${shoulder_roll_height}"
+        origin_xyz="0 0 ${shoulder_roll_body_z_from_axis}"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="nori_bicep_yaw_link" params="side side_sign:=1.0">
+    <link name="${side}_bicep_yaw_link">
+      <xacro:nori_arm_mesh_visual mesh="bicep_yaw"
+        xyz="0 0 ${-elbow_pitch_drop}" side_sign="${side_sign}"/>
+      <collision>
+        <origin xyz="0 0 ${bicep_yaw_body_z_from_top}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${bicep_yaw_depth} ${bicep_yaw_width} ${bicep_yaw_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${bicep_yaw_mass}"
+        length="${bicep_yaw_depth}"
+        width="${bicep_yaw_width}"
+        height="${bicep_yaw_height}"
+        origin_xyz="0 0 ${bicep_yaw_body_z_from_top}"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="nori_elbow_pitch_link" params="side side_sign:=1.0">
+    <link name="${side}_elbow_pitch_link">
+      <xacro:nori_arm_mesh_visual mesh="elbow_pitch"
+        xyz="0 0 ${-forearm_yaw_drop}" side_sign="${side_sign}"/>
+      <collision>
+        <origin
+          xyz="0 0 ${shoulder_roll_body_z_from_axis}"
+          rpy="0 0 ${nori_pi / 2.0}"/>
+        <geometry>
+          <box size="${shoulder_roll_depth} ${shoulder_roll_width} ${shoulder_roll_height}"/>
+        </geometry>
+      </collision>
+      <!-- X/Y inertia dimensions swap after the 90-degree Z rotation. -->
+      <xacro:box_inertial
+        mass="${elbow_pitch_mass}"
+        length="${shoulder_roll_width}"
+        width="${shoulder_roll_depth}"
+        height="${shoulder_roll_height}"
+        origin_xyz="0 0 ${shoulder_roll_body_z_from_axis}"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="nori_forearm_yaw_link" params="side side_sign:=1.0">
+    <link name="${side}_forearm_yaw_link">
+      <xacro:nori_arm_mesh_visual mesh="forearm_yaw"
+        xyz="0 0 ${-wrist_pitch_drop}" side_sign="${side_sign}"/>
+      <collision>
+        <origin xyz="0 0 ${forearm_yaw_body_z_from_top}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${forearm_yaw_depth} ${forearm_yaw_width} ${forearm_yaw_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${forearm_yaw_mass}"
+        length="${forearm_yaw_depth}"
+        width="${forearm_yaw_width}"
+        height="${forearm_yaw_height}"
+        origin_xyz="0 0 ${forearm_yaw_body_z_from_top}"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="nori_wrist_pitch_link" params="side side_sign:=1.0">
+    <link name="${side}_wrist_pitch_link">
+      <xacro:nori_arm_mesh_visual mesh="wrist_pitch"
+        xyz="0 0 ${-wrist_roll_drop}" side_sign="${side_sign}"/>
+      <collision>
+        <origin xyz="0 0 ${wrist_pitch_body_z_from_axis}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${wrist_pitch_depth} ${wrist_pitch_width} ${wrist_pitch_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${wrist_pitch_mass}"
+        length="${wrist_pitch_depth}"
+        width="${wrist_pitch_width}"
+        height="${wrist_pitch_height}"
+        origin_xyz="0 0 ${wrist_pitch_body_z_from_axis}"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="nori_wrist_roll_link" params="side side_sign:=1.0">
+    <link name="${side}_wrist_roll_link">
+      <!-- The STL's export origin is off the wrist centerline; the mesh_x/y
+           offsets recenter its geometry over the wrist_pitch axis. Rotate
+           only the housing geometry a half-turn about the link's blue Z axis;
+           rotating the joint frame about X would mirror downstream motion. -->
+      <xacro:nori_arm_mesh_visual mesh="wrist_roll"
+        xyz="${-wrist_roll_mesh_x} ${-side_sign * wrist_roll_mesh_y} ${-gripper_drop}"
+        side_sign="${side_sign}"
+        rpy="${-nori_pi / 2.0} 0 ${nori_pi}"/>
+      <collision>
+        <origin xyz="0 0 ${wrist_roll_body_z_from_axis}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${wrist_roll_depth} ${wrist_roll_width} ${wrist_roll_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${wrist_roll_mass}"
+        length="${wrist_roll_depth}"
+        width="${wrist_roll_width}"
+        height="${wrist_roll_height}"
+        origin_xyz="0 0 ${wrist_roll_body_z_from_axis}"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="nori_gripper_finger_link" params="name mesh side_sign">
+    <link name="${name}">
+      <xacro:nori_arm_mesh_visual mesh="${mesh}" xyz="0 0 0"
+        side_sign="${side_sign}"/>
+      <collision>
+        <origin
+          xyz="0 ${side_sign * gripper_finger_body_y} ${gripper_finger_body_z}"
+          rpy="0 0 0"/>
+        <geometry>
+          <box size="${gripper_finger_depth} ${gripper_finger_width} ${gripper_finger_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${gripper_finger_mass}"
+        length="${gripper_finger_depth}"
+        width="${gripper_finger_width}"
+        height="${gripper_finger_height}"
+        origin_xyz="0 ${side_sign * gripper_finger_body_y} ${gripper_finger_body_z}"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="nori_gripper_camera_mount" params="side side_sign">
+    <link name="${side}_gripper_camera_mount_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh
+            filename="package://nori_description/meshes/visual/camera_mounts/${side}_camera_mount_mirrored.stl"
+            scale="${gripper_camera_mount_mesh_scale} ${gripper_camera_mount_mesh_scale} ${gripper_camera_mount_mesh_scale}"/>
+        </geometry>
+        <material name="nori_arm_plastic"/>
+      </visual>
+    </link>
+    <!--
+      Parented to the WRIST, not the gripper. It was hanging off ${side}_gripper_link,
+      which is the servo-driven finger — so opening and closing the claw swung the
+      camera (and both wrist_camera optical frames beneath it) with it. The mount is
+      physically fixed to the wrist; only the fingers move.
+
+      The origin below is the old gripper-relative placement composed through the
+      gripper joint's own transform at zero, so the mount does not move: that joint
+      contributes drop_xyz plus a 180 deg yaw, hence the negated mount offsets and
+      the rpy carried over here.
+    -->
+    <joint name="${side}_gripper_camera_mount_joint" type="fixed">
+      <parent link="${side}_wrist_roll_link"/>
+      <child link="${side}_gripper_camera_mount_link"/>
+      <origin
+        xyz="${-wrist_roll_mesh_x
+               - ((1.0 - side_sign) * left_gripper_camera_mount_x_offset / 2.0
+                  + (1.0 + side_sign) * right_gripper_camera_mount_x_offset / 2.0)}
+             ${-side_sign * wrist_roll_mesh_y - side_sign * gripper_camera_mount_y_offset}
+             ${-gripper_drop}"
+        rpy="0 0 ${nori_pi}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="nori_wrist_camera_frames">
+    <!-- Yaw turns the camera to face along the arm toward the gripper; pitch rakes
+         it down toward the fingers. See wrist_camera_*_deg in properties.xacro for
+         why one angle was never enough.
+
+         The YAW is mirrored and the right side also takes a 180 deg ROLL; pitch
+         is the same on both. The two mount frames differ by a flip of their local
+         Y and Z, so the same yaw swings one camera outboard and the other
+         inboard. Mirroring the yaw alone aims the right camera correctly but
+         leaves it rolled 180 deg about its own view axis - the image would come
+         out upside-down relative to the left. The roll restores a true mirror,
+         which test_wrist_camera_frames_match_measured_and_mirrored_mount_offsets
+         checks on the full rotation matrix, not just the view direction. -->
+    <xacro:nori_camera
+      name="left_wrist_camera"
+      parent="left_gripper_camera_mount_link"
+      xyz="0 ${left_wrist_camera_y_from_mount} ${left_wrist_camera_z_from_mount}"
+      pitch="${wrist_camera_pitch_deg * deg_to_rad}"
+      yaw="${wrist_camera_yaw_deg * deg_to_rad}"/>
+
+    <xacro:nori_camera
+      name="right_wrist_camera"
+      parent="right_gripper_camera_mount_link"
+      xyz="${right_wrist_camera_x_from_mount}
+           ${right_wrist_camera_y_from_mount}
+           ${right_wrist_camera_z_from_mount}"
+      roll="${nori_pi}"
+      pitch="${wrist_camera_pitch_deg * deg_to_rad}"
+      yaw="${-wrist_camera_yaw_deg * deg_to_rad}"/>
+  </xacro:macro>
+
+  <!--
+    Geared two-finger claw: the servo (bus ID 8) drives ${side}_gripper_joint
+    directly; the idler finger's gear counter-rotates at the same rate, which
+    the mimic joint reproduces. joint_state_publisher, MoveIt, and mock
+    hardware resolve the mimic; the real hardware interface publishes only
+    the driven joint, so the idler needs mimic support in the broadcaster
+    before on-robot displays track it.
+  -->
+  <xacro:macro name="nori_gripper" params="side side_sign">
+    <link name="${side}_gripper_tcp_link"/>
+    <joint name="${side}_gripper_tcp_joint" type="fixed">
+      <parent link="${side}_wrist_roll_link"/>
+      <child link="${side}_gripper_tcp_link"/>
+      <origin
+        xyz="${-(wrist_roll_mesh_x + gripper_gear_center_distance / 2.0)}
+             ${-side_sign * wrist_roll_mesh_y}
+             ${-gripper_drop - gripper_tcp_below_pivots}"
+        rpy="0 ${nori_pi} ${nori_pi}"/>
+    </joint>
+
+    <xacro:nori_gripper_finger_link name="${side}_gripper_link"
+      mesh="gripper_r" side_sign="${side_sign}"/>
+    <!-- The drive pivot coincides with the wrist_roll STL's origin, so it
+         shares the mesh centering offsets. -->
+    <xacro:nori_arm_joint side="${side}" name="gripper"
+      lower="${gripper_lower_limit}" upper="${gripper_upper_limit}"
+      parent="wrist_roll_link" child="gripper_link" axis="0 1 0"
+      drop_xyz="${-wrist_roll_mesh_x}
+                ${-side_sign * wrist_roll_mesh_y}
+                ${-gripper_drop}"
+      rpy="0 0 ${nori_pi}"/>
+
+    <xacro:nori_gripper_camera_mount side="${side}" side_sign="${side_sign}"/>
+
+    <xacro:nori_gripper_finger_link name="${side}_gripper_idler_link"
+      mesh="gripper_l" side_sign="${side_sign}"/>
+    <joint name="${side}_gripper_idler_joint" type="revolute">
+      <parent link="${side}_wrist_roll_link"/>
+      <child link="${side}_gripper_idler_link"/>
+      <origin
+        xyz="${-(wrist_roll_mesh_x + gripper_gear_center_distance)}
+             ${-side_sign * wrist_roll_mesh_y}
+             ${-gripper_drop}"
+        rpy="0 0 ${nori_pi}"/>
+      <axis xyz="0 1 0"/>
+      <limit
+        lower="${-gripper_upper_limit}" upper="${-gripper_lower_limit}"
+        effort="${arm_effort_limit}" velocity="${arm_velocity_limit}"/>
+      <mimic joint="${side}_gripper_joint" multiplier="-1" offset="0"/>
+      <dynamics damping="0.1" friction="0.0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="nori_arm_joint"
+      params="side name parent child axis drop_xyz lower upper rpy:='0 0 0'">
+    <joint name="${side}_${name}_joint" type="revolute">
+      <parent link="${side}_${parent}"/>
+      <child link="${side}_${child}"/>
+      <origin xyz="${drop_xyz}" rpy="${rpy}"/>
+      <axis xyz="${axis}"/>
+      <limit
+        lower="${lower}" upper="${upper}"
+        effort="${arm_effort_limit}" velocity="${arm_velocity_limit}"/>
+      <dynamics damping="0.1" friction="0.0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="nori_arm" params="side side_sign">
+    <xacro:nori_shoulder_pitch_link side="${side}" side_sign="${side_sign}"/>
+    <joint name="${side}_shoulder_pitch_joint" type="revolute">
+      <parent link="lift_top_link"/>
+      <child link="${side}_shoulder_pitch_link"/>
+      <!-- Mount the adjusted shoulder-pitch origin directly to the moving
+           lift-top frame so the complete arm subtree moves with it. -->
+      <origin
+        xyz="${arm_mount_x_from_lift_top}
+             ${-side_sign * arm_mount_y_from_lift_top}
+             ${arm_mount_z_from_lift_top}"
+        rpy="0 0 ${nori_pi}"/>
+      <axis xyz="0 1 0"/>
+      <limit
+        lower="${shoulder_pitch_lower_limit}"
+        upper="${shoulder_pitch_upper_limit}"
+        effort="${arm_effort_limit}" velocity="${arm_velocity_limit}"/>
+      <dynamics damping="0.1" friction="0.0"/>
+    </joint>
+
+    <xacro:nori_shoulder_roll_link side="${side}" side_sign="${side_sign}"/>
+    <xacro:nori_arm_joint side="${side}" name="shoulder_roll"
+      lower="${shoulder_roll_lower_limit}" upper="${shoulder_roll_upper_limit}"
+      parent="shoulder_pitch_link" child="shoulder_roll_link" axis="1 0 0"
+      drop_xyz="0 ${side_sign * shoulder_roll_y_from_shoulder_pitch} 0"
+      rpy="${side_sign * nori_pi / 2.0} 0 0"/>
+
+    <xacro:nori_bicep_yaw_link side="${side}" side_sign="${side_sign}"/>
+    <xacro:nori_arm_joint side="${side}" name="bicep_yaw"
+      lower="${bicep_yaw_lower_limit}" upper="${bicep_yaw_upper_limit}"
+      parent="shoulder_roll_link" child="bicep_yaw_link" axis="0 0 1"
+      drop_xyz="0 0 ${-bicep_yaw_drop}"/>
+
+    <xacro:nori_elbow_pitch_link side="${side}" side_sign="${side_sign}"/>
+    <xacro:nori_arm_joint side="${side}" name="elbow_pitch"
+      lower="${elbow_pitch_lower_limit}" upper="${elbow_pitch_upper_limit}"
+      parent="bicep_yaw_link" child="elbow_pitch_link" axis="0 1 0"
+      drop_xyz="0 0 ${-elbow_pitch_drop}"/>
+
+    <xacro:nori_forearm_yaw_link side="${side}" side_sign="${side_sign}"/>
+    <xacro:nori_arm_joint side="${side}" name="forearm_yaw"
+      lower="${forearm_yaw_lower_limit}" upper="${forearm_yaw_upper_limit}"
+      parent="elbow_pitch_link" child="forearm_yaw_link" axis="0 0 1"
+      drop_xyz="0 0 ${-forearm_yaw_drop}"/>
+
+    <xacro:nori_wrist_pitch_link side="${side}" side_sign="${side_sign}"/>
+    <xacro:nori_arm_joint side="${side}" name="wrist_pitch"
+      lower="${wrist_pitch_lower_limit}" upper="${wrist_pitch_upper_limit}"
+      parent="forearm_yaw_link" child="wrist_pitch_link" axis="0 1 0"
+      drop_xyz="0 0 ${-wrist_pitch_drop}"/>
+
+    <xacro:nori_wrist_roll_link side="${side}" side_sign="${side_sign}"/>
+    <xacro:nori_arm_joint side="${side}" name="wrist_roll"
+      lower="${wrist_roll_lower_limit}" upper="${wrist_roll_upper_limit}"
+      parent="wrist_pitch_link" child="wrist_roll_link" axis="-1 0 0"
+      drop_xyz="${wrist_roll_x_from_wrist_pitch}
+                ${side_sign * wrist_roll_y_from_wrist_pitch}
+                ${-wrist_roll_drop}"
+      rpy="0 0 ${nori_pi}"/>
+
+    <xacro:nori_gripper side="${side}" side_sign="${side_sign}"/>
+  </xacro:macro>
+</robot>

@@ -1,0 +1,213 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- A wheel cylinder is rotated so its local Z axis is parallel to robot Y. -->
+  <xacro:macro name="nori_wheel" params="side y">
+    <link name="${side}_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${nori_pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="nori_tyre"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${nori_pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial
+        mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_width}"
+        origin_xyz="0 0 0" rpy="${nori_pi / 2.0} 0 0"/>
+    </link>
+
+    <joint name="${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${side}_wheel_link"/>
+      <origin xyz="0 ${y} 0" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <dynamics damping="0.05" friction="0.02"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="nori_caster_wheel" params="side y">
+    <link name="${side}_caster_wheel_link">
+      <visual>
+        <geometry>
+          <sphere radius="${caster_radius}"/>
+        </geometry>
+        <material name="nori_tyre"/>
+      </visual>
+      <collision>
+        <geometry>
+          <sphere radius="${caster_radius}"/>
+        </geometry>
+      </collision>
+      <xacro:sphere_inertial mass="${caster_mass}" radius="${caster_radius}"/>
+    </link>
+
+    <!-- A fixed sphere approximates free caster swivel and rolling motion. -->
+    <joint name="${side}_caster_wheel_joint" type="fixed">
+      <parent link="caster_link"/>
+      <child link="${side}_caster_wheel_link"/>
+      <origin xyz="0 ${y} 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="nori_base" params="">
+    <!-- base_footprint lies on the nominal ground plane; +X forward, +Y left, +Z up. -->
+    <link name="base_footprint"/>
+
+    <link name="base_link">
+      <visual>
+        <origin xyz="${base_geometry_x} 0 ${base_geometry_z}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${base_length} ${base_width} ${base_height}"/>
+        </geometry>
+        <material name="nori_chassis"/>
+      </visual>
+      <!-- Plastic outer shell. A SECOND visual on the same link: URDF allows any
+           number, so the metal frame above and this shell both render without
+           needing an extra link or joint, and the link's mass still covers both.
+           See properties.xacro for why the offsets are what they are. -->
+      <visual>
+        <origin
+          xyz="${base_shell_offset_x} ${base_shell_offset_y} ${base_shell_offset_z}"
+          rpy="0 0 ${base_shell_yaw}"/>
+        <geometry>
+          <mesh filename="package://nori_description/meshes/visual/base_shell.stl"
+                scale="${base_shell_mesh_scale} ${base_shell_mesh_scale} ${base_shell_mesh_scale}"/>
+        </geometry>
+        <material name="nori_shell"/>
+      </visual>
+      <collision>
+        <origin xyz="${base_geometry_x} 0 ${base_geometry_z}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${base_length} ${base_width} ${base_height}"/>
+        </geometry>
+      </collision>
+      <!-- TODO: collision and inertia still describe the 40 mm metal frame only.
+           The shell is ~207 mm tall, so a planner currently believes the arms can
+           sweep through it, and the inertia tensor is computed from the frame's
+           height rather than the real body. Both want fixing once the shell's
+           placement is confirmed. -->
+      <xacro:box_inertial
+        mass="${base_mass}" length="${base_length}" width="${base_width}" height="${base_height}"
+        origin_xyz="${base_geometry_x} 0 ${base_geometry_z}"/>
+    </link>
+
+    <!-- base_link is at the wheel axle center; base_footprint is one wheel radius below. -->
+    <joint name="base_footprint_joint" type="fixed">
+      <parent link="base_footprint"/>
+      <child link="base_link"/>
+      <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+    </joint>
+
+    <xacro:nori_wheel side="left" y="${wheel_separation / 2.0}"/>
+    <xacro:nori_wheel side="right" y="${-wheel_separation / 2.0}"/>
+
+    <!-- Center mounting frame for the pair of rear caster wheels. -->
+    <link name="caster_link"/>
+
+    <joint name="caster_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="caster_link"/>
+      <origin xyz="${caster_x} 0 ${-wheel_radius + caster_radius}" rpy="0 0 0"/>
+    </joint>
+
+    <xacro:nori_caster_wheel side="left" y="${caster_separation / 2.0}"/>
+    <xacro:nori_caster_wheel side="right" y="${-caster_separation / 2.0}"/>
+
+    <!-- The fixed inner section replaces the former one-piece mast. -->
+    <link name="lift_bottom_link">
+      <visual>
+        <geometry>
+          <box size="${lift_bottom_depth} ${lift_bottom_width} ${lift_stage_height}"/>
+        </geometry>
+        <material name="nori_lift_metal"/>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${lift_bottom_depth} ${lift_bottom_width} ${lift_stage_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${lift_bottom_mass}" length="${lift_bottom_depth}"
+        width="${lift_bottom_width}" height="${lift_stage_height}"
+        origin_xyz="0 0 0"/>
+    </link>
+
+    <joint name="lift_bottom_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="lift_bottom_link"/>
+      <origin
+        xyz="${lift_x} ${lift_y} ${lift_retracted_center_z}" rpy="0 0 0"/>
+    </joint>
+
+    <!-- The outer/top section owns the full physical extension coordinate. -->
+    <link name="lift_top_link">
+      <visual>
+        <geometry>
+          <box size="${lift_top_depth} ${lift_top_width} ${lift_stage_height}"/>
+        </geometry>
+        <material name="nori_lift_metal"/>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${lift_top_depth} ${lift_top_width} ${lift_stage_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${lift_top_mass}" length="${lift_top_depth}"
+        width="${lift_top_width}" height="${lift_stage_height}"
+        origin_xyz="0 0 0"/>
+    </link>
+
+    <joint name="lift_extension_joint" type="prismatic">
+      <parent link="base_link"/>
+      <child link="lift_top_link"/>
+      <origin
+        xyz="${lift_x} ${lift_y} ${lift_retracted_center_z}" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="0.0" upper="${lift_command_travel}"
+        effort="${lift_effort_limit}" velocity="${lift_velocity_limit}"/>
+      <dynamics damping="1.0" friction="0.0"/>
+    </joint>
+
+    <!-- The middle section travels half as far as the top section. Keeping
+         both moving stages relative to base makes lift_extension_joint equal
+         the top edge's physical displacement rather than a serial-joint sum. -->
+    <link name="lift_middle_link">
+      <visual>
+        <geometry>
+          <box size="${lift_middle_depth} ${lift_middle_width} ${lift_stage_height}"/>
+        </geometry>
+        <material name="nori_lift_metal"/>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${lift_middle_depth} ${lift_middle_width} ${lift_stage_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${lift_middle_mass}" length="${lift_middle_depth}"
+        width="${lift_middle_width}" height="${lift_stage_height}"
+        origin_xyz="0 0 0"/>
+    </link>
+
+    <joint name="lift_middle_joint" type="prismatic">
+      <parent link="base_link"/>
+      <child link="lift_middle_link"/>
+      <origin
+        xyz="${lift_x} ${lift_y} ${lift_retracted_center_z}" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="0.0" upper="${lift_command_travel * lift_middle_travel_ratio}"
+        effort="${lift_effort_limit}"
+        velocity="${lift_velocity_limit * lift_middle_travel_ratio}"/>
+      <dynamics damping="1.0" friction="0.0"/>
+      <mimic joint="lift_extension_joint"
+        multiplier="${lift_middle_travel_ratio}" offset="0.0"/>
+    </joint>
+
+  </xacro:macro>
+</robot>

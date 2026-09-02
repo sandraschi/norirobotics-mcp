@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="nori_sensors" params="">
+    <!-- Front camera looks straight out of the torso: 90 deg from the torso face
+         is horizontal, so no pitch. -->
+    <xacro:nori_camera
+      name="front_camera"
+      parent="lift_top_link"
+      xyz="${front_camera_x_from_lift_top} 0 ${front_camera_z_from_lift_top}"
+      pitch="${front_camera_pitch_deg * deg_to_rad}"/>
+
+    <!-- Overhead camera rakes down at the same angle as the head's cap. -->
+    <xacro:nori_camera
+      name="overhead_camera"
+      parent="lift_top_link"
+      xyz="${overhead_camera_x_from_lift_top} 0 ${overhead_camera_z_from_lift_top}"
+      pitch="${overhead_camera_pitch_deg * deg_to_rad}"/>
+
+    <link name="lidar_link">
+      <visual>
+        <origin xyz="0 0 ${-lidar_scan_offset_z}" rpy="0 0 0"/>
+        <geometry>
+          <mesh
+            filename="package://nori_description/meshes/visual/RPLiDarC1.stl"
+            scale="${lidar_mesh_scale} ${lidar_mesh_scale} ${lidar_mesh_scale}"/>
+        </geometry>
+        <material name="nori_sensor"/>
+      </visual>
+      <collision>
+        <!-- Use a simple cylindrical envelope for the detailed C1 assembly. -->
+        <origin xyz="0 0 ${lidar_collision_z - lidar_scan_offset_z}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${lidar_radius}" length="${lidar_height}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial
+        mass="${lidar_mass}" radius="${lidar_radius}" length="${lidar_height}"
+        origin_xyz="0 0 ${lidar_collision_z - lidar_scan_offset_z}" rpy="0 0 0"/>
+    </link>
+    <joint name="lidar_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="lidar_link"/>
+      <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 0"/>
+    </joint>
+
+    <!--
+      The installed C1 scan axes are rotated 180 degrees from Nori's
+      forward/left convention. Keep lidar_link aligned with the physical model
+      and expose a corrected frame for LaserScan data.
+    -->
+    <link name="lidar_scan_link"/>
+    <joint name="lidar_scan_joint" type="fixed">
+      <parent link="lidar_link"/>
+      <child link="lidar_scan_link"/>
+      <origin xyz="0 0 0" rpy="0 0 ${nori_pi}"/>
+    </joint>
+
+    <!--
+      imu_link follows the BNO085's physical axes. The installed board's +X
+      points toward robot +X and +Y points toward robot +Y (left), so the IMU
+      frame is aligned with the robot frame.
+    -->
+    <link name="imu_link">
+      <visual>
+        <geometry>
+          <box size="${imu_depth} ${imu_width} ${imu_height}"/>
+        </geometry>
+        <material name="nori_sensor"/>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${imu_depth} ${imu_width} ${imu_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${imu_mass}" length="${imu_depth}" width="${imu_width}" height="${imu_height}"
+        origin_xyz="0 0 0"/>
+    </link>
+    <joint name="imu_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="imu_link"/>
+      <origin xyz="${imu_x} ${imu_y} ${imu_z}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+</robot>

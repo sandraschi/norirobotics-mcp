@@ -1,5 +1,37 @@
 # Changelog
 
+## [Unreleased] — 2026-09-02 (later same day)
+
+### Added — real Nori A3 CAD/mesh assets
+- Vendored Nori Robotics' own official hardware repos at `models/`: `nori_description`
+  (CC BY-NC-SA 4.0 — ROS 2 URDF/xacro + 20 real per-link STL meshes) and `nori-printables`
+  (CC BY 4.0 — STL/STEP spares, end-effector attachment geometry, cosmetics). See
+  `models/ATTRIBUTION.md` for full license/attribution and `models/nori_description/NOTICE`
+  for Nori's own accuracy caveats (measured kinematics, approximate inertials, coarse
+  collision geometry, RPLiDAR mesh is a primitive stand-in).
+- `scripts/expand_urdf.py` — expands the vendored xacro into a flat, non-ROS-dependent URDF
+  (patches the one `$(find nori_description)` ament substitution to a local path; rewrites
+  `package://` mesh URIs to relative/absolute paths; injects a
+  `<mujoco><compiler discardvisual="false"/></mujoco>` block — MuJoCo's URDF importer
+  silently drops `<visual>` mesh geometry and keeps only `<collision>` primitives unless
+  told otherwise, found and fixed while debugging why the first render looked like coarse
+  boxes/cylinders instead of the real robot). Verified loading in real MuJoCo: 23 bodies,
+  45 joints/links, rendered and visually confirmed.
+- `scripts/export_posed_mesh.py` — reads MuJoCo's own compiled+forward-kinematics-resolved
+  mesh data (reusing the verified URDF instead of reimplementing joint-chain assembly by
+  hand) to merge all 22 real visual mesh parts into one correctly-posed model: a 2.4MB GLB
+  (73,974 verts / 134,656 tris, for Unity import) and a decimated 26,467-tri mesh-JSON
+  (for ResoniteLink's `spawn_mesh`, which sends the whole mesh inline over WebSocket —
+  135k tris was too large for that).
+- Registered the real model as `nori_a3` in `mujoco-mcp`'s model depot (`load_model`).
+- `robotics-mcp`'s `robot_virtual`/`vbot_crud` Resonite spawn path now uses this real,
+  correctly-posed mesh for `robot_type="nori_a3"` specifically (procedural placeholder box
+  for every other robot_type) — spawns live via ResoniteLink's `spawn_mesh`, same mechanism
+  proven by the nekomimi-chan VRM spawn. Unity spawn stages the real GLB into the mounted
+  project's Assets via `import_3d_model` as a best-effort addition alongside the guaranteed-
+  visible capsule primitive (no "instantiate from imported asset" tool exists yet, so the
+  capsule is still what's actually visible in a running scene without a manual drag-in).
+
 ## [Unreleased] — 2026-09-02
 
 ### Added

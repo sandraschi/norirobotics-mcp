@@ -1,0 +1,166 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# NORI inertial parameters — the single place to record measured mass data.
+#
+# HOW TO USE
+#   Weigh a part, put the number in `mass`, flip `measured` to true, and note
+#   how you got it. Nothing else needs to change: `urdf/inertial.xacro` reads
+#   this file at build time and the inertia tensors recompute from the primitive
+#   envelopes already defined in `urdf/properties.xacro`.
+#
+# WHAT TO WEIGH  ->  the link exactly as it exists on the assembled robot:
+#   the structural part, ITS SERVO, fasteners, bearings, and the cable stub that
+#   moves with it. One number per link. Do not subtract anything.
+#
+#   A link's mass belongs to the link it MOVES WITH. A servo bolted into the
+#   bicep housing that drives the elbow moves with the bicep, so its mass goes
+#   on `bicep_yaw`, not `elbow_pitch`.
+#
+# ACCURACY WORTH CHASING
+#   mass  — the parameter that matters most. Worth getting within a few percent.
+#   com   — second. Optional; fill in only if you have it (see below).
+#   inertia tensor — computed for you. ~20% error is fine and normal at this
+#           stage; nobody should be doing torque-level sim-to-real off this yet.
+#
+# OPTIONAL, FOR A BETTER CENTER OF MASS
+#   Each link is currently treated as a uniform-density box. That is wrong in a
+#   predictable way: a link is a heavy metal servo inside a light shell, so its
+#   true COM sits toward the servo. If you fill in the `motor` block — servo
+#   mass (a datasheet number) and roughly where it sits in the link frame —
+#   `inertial.xacro` will offset the COM accordingly instead of assuming centre.
+#   Leave `motor` commented out and you get the current uniform-box behaviour.
+#
+# LEFT/RIGHT are mirror-identical, so one entry covers both arms.
+# All masses in kilograms, all positions in metres, in the link's own frame.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+# KNOWN SHORTFALL — read before using these for dynamics.
+#
+# These links sum to ~18.34 kg. A real A3 weighs 20.1 kg on a scale, so the model
+# is ~1.76 kg (8.7%) light. The difference is hardware nobody modelled as its own
+# link: USB hubs, the wiring loom, cable management, larger fasteners.
+#
+# It is assumed DISTRIBUTED in rough proportion to where the hardware sits, which
+# is why no link carries a fudge factor — a pro-rata shortfall leaves the centre
+# of mass exactly where it already is. Scale by 1.096 if you need the real total.
+#
+# Where that assumption could bite: if the main wiring loom runs UP the lift
+# column rather than sitting in the base, the missing mass is concentrated high
+# instead of spread. Tested across plausible placements, the centre of mass moves
+# by up to 28 mm stowed and 76 mm at full extension — comparable to the entire
+# upper body's contribution. Confirm the loom routing before doing tip-stability
+# or torque work off this model.
+# ─────────────────────────────────────────────────────────────────────────────
+
+links:
+
+  # ---- Base ----------------------------------------------------------------
+  base_link:
+    mass: 3.9
+    measured: true
+    note: "Measured 2026-08-19. Chassis + batteries + compute."
+
+  wheel:
+    mass: 0.437
+    measured: true
+    note: "Measured 2026-08-19. One drive wheel incl. hub motor."
+
+  caster:
+    mass: 0.247
+    measured: true
+    note: "Measured 2026-08-19. One rear caster incl. swivel."
+
+  # ---- Lift (three telescoping stages) --------------------------------------
+  lift_bottom:
+    mass: 3.402
+    measured: false
+    derived: true
+    note: "Total lift assembly measured 2026-08-19 at 7.56 kg. It is bought as one unit and cannot be separated to weigh the stages individually. Split 45/30/25 bottom-to-top per the hardware team's estimate - the drive lives in the lower section, so mass falls off going up. The TOTAL is measured; this stage's share is an engineering estimate that cannot be improved without destructive disassembly."
+
+  lift_middle:
+    mass: 2.268
+    measured: false
+    derived: true
+    note: "Total lift assembly measured 2026-08-19 at 7.56 kg. It is bought as one unit and cannot be separated to weigh the stages individually. Split 45/30/25 bottom-to-top per the hardware team's estimate - the drive lives in the lower section, so mass falls off going up. The TOTAL is measured; this stage's share is an engineering estimate that cannot be improved without destructive disassembly."
+
+  lift_top:
+    mass: 1.89
+    measured: false
+    derived: true
+    note: "Total lift assembly measured 2026-08-19 at 7.56 kg. It is bought as one unit and cannot be separated to weigh the stages individually. Split 45/30/25 bottom-to-top per the hardware team's estimate - the drive lives in the lower section, so mass falls off going up. The TOTAL is measured; this stage's share is an engineering estimate that cannot be improved without destructive disassembly."
+
+  # ---- Arm (per side; left and right are identical) -------------------------
+  # These 7 were ALL sharing a single 0.25 kg placeholder. They are not equal.
+  shoulder_pitch:
+    mass: 0.4
+    measured: true
+    note: "Measured 2026-08-19."
+    # motor:
+    #   model: ""        # e.g. STS3215 — used only for provenance
+    #   mass: 0.0        # kg, from the servo datasheet
+    #   xyz: [0.0, 0.0, 0.0]   # servo centre in the LINK frame, metres
+
+  shoulder_roll:
+    mass: 0.252
+    measured: true
+    note: "Measured 2026-08-19."
+
+  bicep_yaw:
+    mass: 0.175
+    measured: true
+    note: "Measured 2026-08-19."
+
+  elbow_pitch:
+    mass: 0.254
+    measured: true
+    note: "Measured 2026-08-19."
+
+  forearm_yaw:
+    mass: 0.148
+    measured: true
+    note: "Measured 2026-08-19."
+
+  wrist_pitch:
+    mass: 0.09
+    measured: true
+    note: "Measured 2026-08-19."
+
+  wrist_roll:
+    mass: 0.142
+    measured: true
+    note: "Measured 2026-08-19."
+
+  gripper_finger:
+    mass: 0.013
+    measured: true
+    note: "Measured 2026-08-19. ONE finger."
+
+  # ---- Upper body ----
+  # Measured 2026-08-19. Came in at 2.22 kg combined, well under the ~5 kg the
+  # team expected — worth knowing, because it sits high on the lift and so has
+  # outsized leverage on the centre of mass.
+  torso:
+    mass: 1.5
+    measured: true
+    note: "Measured 2026-08-19. Body between the lift and the neck."
+
+  neck:
+    mass: 0.2
+    measured: true
+    note: "Measured 2026-08-19."
+
+  head:
+    mass: 0.72
+    measured: true
+    note: "Measured 2026-08-19. Includes screen and cameras."
+
+  # ---- Sensors --------------------------------------------------------------
+  lidar:
+    mass: 0.11
+    measured: true
+    note: "Measured 2026-08-19. RPLIDAR C1."
+
+  imu:
+    mass: 0.01
+    measured: true
+    note: "Measured 2026-08-19. Board only."

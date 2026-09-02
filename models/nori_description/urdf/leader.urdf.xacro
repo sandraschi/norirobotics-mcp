@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<robot name="nori_leader" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="left_bus_port"
+    default="/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B3D044472-if00"/>
+  <xacro:arg name="right_bus_port"
+    default="/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B14029254-if00"/>
+  <xacro:arg name="left_calibration_file"
+    default="~/.config/nori/leader_left_arm_calibration.yaml"/>
+  <xacro:arg name="right_calibration_file"
+    default="~/.config/nori/leader_right_arm_calibration.yaml"/>
+  <xacro:arg name="left_expected_model_number"
+    default="UNVERIFIED_LEFT_MODEL"/>
+  <xacro:arg name="right_expected_model_number"
+    default="UNVERIFIED_RIGHT_MODEL"/>
+
+  <xacro:include filename="properties.xacro"/>
+  <xacro:include filename="base.xacro"/>
+  <xacro:include filename="arm.xacro"/>
+  <xacro:include filename="../ros2_control/nori_feetech.ros2_control.xacro"/>
+
+  <!-- Reuse the established physical joint names and kinematic tree. -->
+  <xacro:nori_base/>
+  <xacro:nori_arm side="left" side_sign="-1.0"/>
+  <xacro:nori_arm side="right" side_sign="1.0"/>
+
+  <xacro:nori_feetech_leader_dual_arm_ros2_control
+    left_bus_port="$(arg left_bus_port)"
+    right_bus_port="$(arg right_bus_port)"
+    left_calibration_file="$(arg left_calibration_file)"
+    right_calibration_file="$(arg right_calibration_file)"
+    left_expected_model_number="$(arg left_expected_model_number)"
+    right_expected_model_number="$(arg right_expected_model_number)"
+    baud_rate="1000000"/>
+</robot>

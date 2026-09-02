@@ -1,0 +1,611 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Masses come from config/inertial_parameters.yaml. Edit that file, not this
+       one, when hardware is weighed. -->
+  <xacro:include filename="inertial.xacro"/>
+
+  <xacro:property name="nori_pi" value="3.141592653589793"/>
+
+  <!-- Supplied chassis dimensions in SI units. -->
+  <xacro:property name="base_length" value="0.350"/>
+  <xacro:property name="base_width" value="0.200"/>
+  <xacro:property name="base_height" value="0.040"/>
+  <!-- Drive-wheel axle center is 41.72459 mm behind the chassis front edge. -->
+  <xacro:property name="axle_to_base_front" value="0.04172459"/>
+  <!-- The drive-wheel axle is 9.62764 mm below the chassis bottom. -->
+  <xacro:property name="wheel_center_below_base" value="0.00962764"/>
+  <xacro:property name="base_geometry_x" value="${axle_to_base_front - base_length / 2.0}"/>
+  <xacro:property name="base_geometry_z" value="${wheel_center_below_base + base_height / 2.0}"/>
+
+  <!--
+    Three-link telescoping lift. The LiftControl endpoint heights are measured
+    from the fixed bottom edge: 515 mm retracted and 1235 mm extended. All
+    three links therefore use the 515 mm retracted envelope, the middle link
+    moves through half the 720 mm total stroke, and the top link moves through
+    the full stroke. The three sections are concentric in X/Y when retracted.
+  -->
+  <xacro:property name="lift_lower_height" value="0.515"/>
+  <xacro:property name="lift_upper_height" value="1.235"/>
+  <xacro:property name="lift_travel" value="${lift_upper_height - lift_lower_height}"/>
+  <!-- Operating ceiling: the joint limit the controllers/teleop tools may
+       command stops this far below the calibrated top mechanical stop, so the
+       carriage never works against the stop and keeps a reserve for overshoot.
+       lift_travel above stays the PHYSICAL stroke (geometry, mimic ratio, the
+       Pico plugin's mm<->m scale, the calibration record); lift_command_travel
+       is the commandable range. nori-calibrate-pico-lift parks the lift at
+       this ceiling after calibrating so activation never has to move it. -->
+  <xacro:property name="lift_top_margin" value="0.02"/>
+  <xacro:property name="lift_command_travel" value="${lift_travel - lift_top_margin}"/>
+  <xacro:property name="lift_stage_height" value="${lift_lower_height}"/>
+
+  <xacro:property name="lift_middle_travel_ratio" value="0.5"/>
+  <xacro:property name="lift_bottom_depth" value="0.03875250"/>
+  <xacro:property name="lift_bottom_width" value="0.06890250"/>
+  <xacro:property name="lift_middle_depth" value="0.04475250"/>
+  <xacro:property name="lift_middle_width" value="0.07490250"/>
+  <xacro:property name="lift_top_depth" value="0.05075250"/>
+  <xacro:property name="lift_top_width" value="0.08090250"/>
+  <xacro:property name="lift_front_edge_setback" value="0.13587150"/>
+  <xacro:property name="lift_base_clearance" value="0.0456"/>
+  <xacro:property name="lift_x"
+    value="${axle_to_base_front - lift_front_edge_setback - lift_bottom_depth / 2.0}"/>
+  <xacro:property name="lift_y" value="0.0"/>
+  <xacro:property name="lift_retracted_center_z"
+    value="${wheel_center_below_base + base_height + lift_base_clearance + lift_stage_height / 2.0}"/>
+  <xacro:property name="lift_effort_limit" value="1.0"/>
+  <!--
+    Keep the ros2_control command envelope above the 0.10 m/s turbo
+    trajectory speed. Short trajectories are replaced asynchronously, so
+    their interpolated position command can briefly exceed the nominal speed
+    even though the Pico remains physically limited by its selected PWM.
+  -->
+  <xacro:property name="lift_velocity_limit" value="0.15"/>
+
+  <!--
+    Shoulder-pitch origins on the moving lift top. The measured baseline pair
+    is 250 mm apart, 14 mm below the lift's top face, and 25.37848 mm behind
+    its front edge. Apply the requested 156.51734 mm downward adjustment to
+    both complete arm subtrees. lift_top_link is centered in the lift envelope,
+    with +X forward and +Z up.
+  -->
+  <xacro:property name="arm_mount_separation" value="0.250"/>
+  <xacro:property name="arm_mount_below_lift_top_face" value="0.014"/>
+  <xacro:property name="shoulder_pitch_down_adjustment" value="0.15651734"/>
+  <xacro:property name="arm_mount_behind_lift_top_front" value="0.02537848"/>
+  <xacro:property name="arm_mount_x_from_lift_top"
+    value="${lift_top_depth / 2.0 - arm_mount_behind_lift_top_front}"/>
+  <xacro:property name="arm_mount_y_from_lift_top"
+    value="${arm_mount_separation / 2.0}"/>
+  <xacro:property name="arm_mount_z_from_lift_top"
+    value="${lift_stage_height / 2.0
+             - arm_mount_below_lift_top_face
+             - shoulder_pitch_down_adjustment}"/>
+
+  <!-- Measured front-camera frame relative to the moving lift-top envelope. -->
+  <xacro:property name="front_camera_below_lift_top_edge" value="0.17765747"/>
+  <xacro:property name="front_camera_forward_of_lift_top_front" value="0.05166080"/>
+  <xacro:property name="front_camera_x_from_lift_top"
+    value="${lift_top_depth / 2.0 + front_camera_forward_of_lift_top_front}"/>
+  <xacro:property name="front_camera_z_from_lift_top"
+    value="${lift_stage_height / 2.0 - front_camera_below_lift_top_edge}"/>
+
+  <!-- Measured overhead-camera frame relative to the moving lift-top envelope. -->
+  <xacro:property name="overhead_camera_above_lift_top_face" value="0.05299205"/>
+  <xacro:property name="overhead_camera_forward_of_lift_top_front" value="0.06426471"/>
+  <xacro:property name="overhead_camera_x_from_lift_top"
+    value="${lift_top_depth / 2.0 + overhead_camera_forward_of_lift_top_front}"/>
+  <xacro:property name="overhead_camera_z_from_lift_top"
+    value="${lift_stage_height / 2.0 + overhead_camera_above_lift_top_face}"/>
+
+  <!-- Wheel diameter, width, and center-to-center separation supplied for NORI. -->
+  <xacro:property name="wheel_radius" value="0.0762"/>
+  <xacro:property name="wheel_width" value="0.0254"/>
+  <xacro:property name="wheel_separation" value="0.30"/>
+
+  <!--
+    Plastic base shell (meshes/visual/base_shell.stl).
+
+    The mesh was exported in CAD ASSEMBLY coordinates, not about its own datum:
+    its raw vertex bounds are X 628.6..1021.8, Y 81.7..351.7, Z -695.7..-489.1 mm,
+    so the file's origin sits roughly a metre outside the geometry. These offsets
+    translate it back onto base_link (the drive-wheel axle centre).
+
+    They are an ALIGNMENT GUESS, not a measurement:
+      * Y is trustworthy - the robot is symmetric about Y=0 and the mesh's Y centre
+        is 216.671 mm, so -0.216671 puts it on the centreline.
+      * X centres the shell on the chassis footprint.
+      * Z puts the shell's LOWEST point at ground level (one wheel radius below
+        base_link). The shell slopes - the rear is taller than the front - so its
+        lowest point is at the front.
+    Nudge these until it sits right, or delete them and set all three to 0 once the
+    mesh is re-exported about the axle centre.
+  -->
+  <xacro:property name="base_shell_mesh_scale" value="0.001"/>
+  <!--
+    Yawed 180 deg: the mesh was exported facing the other way.
+
+    NOTE the offsets below are NOT the un-rotated ones with a yaw bolted on. URDF
+    applies the origin as p_link = R(rpy) * p_mesh + xyz, and this mesh's own origin
+    is about a metre outside its geometry, so rotating about it swings the shell a
+    long way. X and Y had to be recomputed for the rotated pose; Z is unchanged
+    because a yaw does not move anything vertically.
+
+    If the mesh is ever re-exported about the axle centre AND facing forward, all
+    four values go to zero together - not just the offsets.
+  -->
+  <xacro:property name="base_shell_yaw" value="${nori_pi}"/>
+  <xacro:property name="base_shell_offset_x" value="0.691944"/>
+  <xacro:property name="base_shell_offset_y" value="0.216671"/>
+  <!--
+    Z is set so the shell's FRONT SHELF meets the underside of the lidar, rather
+    than by dropping the shell's lowest point to the floor as before. The lidar's
+    height is confirmed correct against hardware, which makes it the one reliable
+    vertical datum on this part: shelf top +0.0515 was 48.1 mm below the lidar base
+    at +0.0996, so the shell floated the sensor. 0.619539 + 0.0481 = 0.667639.
+
+    Consequence worth knowing: the shell's lowest point now sits at about -0.028
+    rather than on the floor, i.e. ~48 mm of ground clearance. That is plausible
+    for a skirt the wheels protrude below (wheels are at y=+/-0.15, outside the
+    shell's +/-0.135 half-width) but it has NOT been checked against hardware.
+  -->
+  <xacro:property name="base_shell_offset_z" value="0.667639"/>
+
+  <!-- Two rear casters, 315 mm behind the front edge and 150 mm apart laterally.
+       TODO: Measure the caster swivel geometry. -->
+  <xacro:property name="caster_radius" value="0.0254"/>
+  <xacro:property name="caster_separation" value="0.150"/>
+  <xacro:property name="caster_front_offset" value="0.315"/>
+  <xacro:property name="caster_x" value="${axle_to_base_front - caster_front_offset}"/>
+
+  <!--
+    RPLIDAR C1 STEP/STL coordinates are millimetres and Z-up. The CAD origin is
+    retained at the center of the sensor body in X/Y. Its measured mesh minimum
+    Z is used to place the lowest mesh point at the specified clearance above
+    the base top surface. The sensor is centered laterally, and its front edge
+    is set back from the base front edge by the supplied distance.
+  -->
+  <xacro:property name="lidar_mesh_scale" value="0.001"/>
+  <xacro:property name="lidar_mesh_max_x" value="0.0278"/>
+  <xacro:property name="lidar_mesh_min_z" value="0.0"/>
+  <xacro:property name="lidar_mesh_max_z" value="0.0413"/>
+  <xacro:property name="lidar_front_edge_setback" value="0.0097"/>
+  <xacro:property name="lidar_x"
+    value="${axle_to_base_front - lidar_front_edge_setback - lidar_mesh_max_x}"/>
+  <xacro:property name="lidar_y" value="0.0"/>
+  <!-- Raise the scan frame inside the fixed C1 model to match its scan plane. -->
+  <xacro:property name="lidar_scan_offset_z" value="0.030"/>
+  <xacro:property name="lidar_base_clearance" value="0.050"/>
+  <xacro:property name="lidar_model_z" value="${wheel_center_below_base + base_height + lidar_base_clearance - lidar_mesh_min_z}"/>
+  <xacro:property name="lidar_z" value="${lidar_model_z + lidar_scan_offset_z}"/>
+
+  <!-- Simple LiDAR collision/inertia envelope derived from the C1 body. -->
+  <xacro:property name="lidar_radius" value="${lidar_mesh_max_x}"/>
+  <xacro:property name="lidar_height" value="${lidar_mesh_max_z - lidar_mesh_min_z}"/>
+  <xacro:property name="lidar_collision_z" value="${(lidar_mesh_min_z + lidar_mesh_max_z) / 2.0}"/>
+
+  <!--
+    Supplied IMU envelope and edge placement. Depth is along robot X, width is
+    along robot Y. The right-edge inset is measured inward from the chassis'
+    right edge.
+  -->
+  <xacro:property name="imu_depth" value="0.00525"/>
+  <xacro:property name="imu_width" value="0.00385"/>
+  <xacro:property name="imu_height" value="0.0012"/>
+  <xacro:property name="imu_front_edge_setback" value="0.020666"/>
+  <xacro:property name="imu_right_edge_inset" value="0.01716726"/>
+  <xacro:property name="imu_base_clearance" value="0.0076"/>
+  <xacro:property name="imu_x"
+    value="${axle_to_base_front - imu_front_edge_setback - imu_depth / 2.0}"/>
+  <xacro:property name="imu_y"
+    value="${-base_width / 2.0 + imu_right_edge_inset + imu_width / 2.0}"/>
+  <xacro:property name="imu_z"
+    value="${wheel_center_below_base + base_height + imu_base_clearance + imu_height / 2.0}"/>
+
+  <!--
+    Arm chain, one servo per joint (bus IDs 1-8). Joint origins lie on each
+    rotation axis at the arm centerline; each *_drop is the metre distance
+    along the parent arm link's local -Z axis between consecutive origins.
+    Arm housing dimensions and joint placement are measured. Masses live in
+    config/inertial_parameters.yaml.
+  -->
+  <xacro:property name="arm_thickness" value="0.050"/>
+  <!-- Arm STLs are millimetres; see arm.xacro for frame conventions. -->
+  <xacro:property name="arm_mesh_scale" value="0.001"/>
+  <xacro:property name="shoulder_pitch_depth" value="0.05560"/>
+  <xacro:property name="shoulder_pitch_width" value="0.04700"/>
+  <xacro:property name="shoulder_pitch_height" value="0.03826"/>
+  <xacro:property name="shoulder_pitch_body_y_from_inside_face"
+    value="${shoulder_pitch_width / 2.0}"/>
+  <!-- Shifts the shoulder_pitch STL along the pitch axis (positive =
+       outboard, mirrored) to compensate for its export origin. Zero once the
+       STL is exported with its origin on the housing's inside Y face. -->
+  <xacro:property name="shoulder_pitch_mesh_y_offset" value="0.00"/>
+  <!--
+    The shoulder-roll axis passes through the center of the housing in X/Y and
+    lies 22 mm below its top. Its axis is 15.9 mm inboard of the
+    shoulder-pitch housing's outside Y face. The shoulder-pitch frame is on
+    that housing's inside Y face, making the roll axis 31.1 mm outboard of the
+    pitch frame. The offset is mirrored for the right arm in arm.xacro.
+  -->
+  <xacro:property name="shoulder_roll_depth" value="0.08360"/>
+  <xacro:property name="shoulder_roll_width" value="0.04500"/>
+  <xacro:property name="shoulder_roll_height" value="0.1350"/>
+  <xacro:property name="shoulder_roll_axis_from_top" value="0.02200"/>
+  <xacro:property name="shoulder_roll_axis_inward_from_pitch_outside" value="0.01590"/>
+  <!-- Includes a 25.6 mm outboard term beyond the nominal
+       (pitch_width - axis_inward) derivation. Reconciled against hardware and
+       verified correct; do not "simplify" it back out. -->
+  <xacro:property name="shoulder_roll_y_from_shoulder_pitch"
+    value="${shoulder_pitch_width - shoulder_roll_axis_inward_from_pitch_outside + 0.0256}"/>
+  <xacro:property name="shoulder_roll_body_z_from_axis"
+    value="${shoulder_roll_axis_from_top - shoulder_roll_height / 2.0}"/>
+  <!--
+    The bicep-yaw frame is centered on its top face, with its body extending
+    downward. Its joint is 2 mm below the center of the shoulder-roll bottom
+    face, leaving a physical gap: (144 - 22) + 2 = 124 mm below the
+    shoulder-roll axis.
+  -->
+  <xacro:property name="bicep_yaw_depth" value="0.03826"/>
+  <xacro:property name="bicep_yaw_width" value="0.05410"/>
+  <xacro:property name="bicep_yaw_height" value="0.08326"/>
+  <xacro:property name="bicep_yaw_z_offset_from_roll_bottom" value="0.00200"/>
+  <xacro:property name="shoulder_roll_bottom_from_axis"
+    value="${shoulder_roll_height - shoulder_roll_axis_from_top}"/>
+  <xacro:property name="bicep_yaw_drop"
+    value="${shoulder_roll_bottom_from_axis + bicep_yaw_z_offset_from_roll_bottom}"/>
+  <xacro:property name="bicep_yaw_body_z_from_top"
+    value="${-bicep_yaw_height / 2.0}"/>
+  <!--
+    Elbow pitch uses the shoulder-roll housing rotated 90 degrees about Z,
+    changing its axis from X to Y. Its axis is 15.9 mm above the bottom face
+    of the bicep-yaw housing.
+  -->
+  <xacro:property name="elbow_pitch_axis_up_from_bicep_bottom" value="0.01590"/>
+  <xacro:property name="elbow_pitch_drop"
+    value="${bicep_yaw_height - elbow_pitch_axis_up_from_bicep_bottom}"/>
+  <!--
+    The forearm-yaw frame is centered on its top face, and that face is 2 mm
+    below the elbow-pitch housing's bottom face.
+  -->
+  <xacro:property name="forearm_yaw_depth" value="0.03520"/>
+  <xacro:property name="forearm_yaw_width" value="0.05000"/>
+  <xacro:property name="forearm_yaw_height" value="0.05640"/>
+  <xacro:property name="forearm_yaw_gap_from_elbow_bottom" value="0.00200"/>
+  <xacro:property name="forearm_yaw_drop"
+    value="${shoulder_roll_bottom_from_axis + forearm_yaw_gap_from_elbow_bottom}"/>
+  <xacro:property name="forearm_yaw_body_z_from_top"
+    value="${-forearm_yaw_height / 2.0}"/>
+  <!--
+    The wrist-pitch frame is centered in X/Y and lies 12 mm below the housing
+    top. Its axis is 10.2 mm above the forearm-yaw bottom face.
+  -->
+  <xacro:property name="wrist_pitch_depth" value="0.05000"/>
+  <xacro:property name="wrist_pitch_width" value="0.06340"/>
+  <xacro:property name="wrist_pitch_height" value="0.09"/>
+  <xacro:property name="wrist_pitch_axis_from_top" value="0.01200"/>
+  <xacro:property name="wrist_pitch_axis_up_from_forearm_bottom" value="0.01020"/>
+  <xacro:property name="wrist_pitch_drop"
+    value="${forearm_yaw_height - wrist_pitch_axis_up_from_forearm_bottom}"/>
+  <xacro:property name="wrist_pitch_body_z_from_axis"
+    value="${wrist_pitch_axis_from_top - wrist_pitch_height / 2.0}"/>
+  <!--
+    The wrist-roll frame is centered in X/Y and lies 12 mm below its housing
+    top. Its axis is 10.2 mm above the wrist-pitch bottom face.
+  -->
+  <xacro:property name="wrist_roll_depth" value="0.05525"/>
+  <xacro:property name="wrist_roll_width" value="0.06340"/>
+  <xacro:property name="wrist_roll_height" value="0.06178433"/>
+  <xacro:property name="wrist_roll_axis_from_top" value="0.01200"/>
+  <xacro:property name="wrist_roll_axis_up_from_wrist_pitch_bottom" value="0.01020"/>
+  <xacro:property name="wrist_pitch_bottom_from_axis"
+    value="${wrist_pitch_height - wrist_pitch_axis_from_top}"/>
+  <xacro:property name="wrist_roll_drop"
+    value="${wrist_pitch_bottom_from_axis - wrist_roll_axis_up_from_wrist_pitch_bottom}"/>
+  <xacro:property name="wrist_roll_body_z_from_axis"
+    value="${wrist_roll_axis_from_top - wrist_roll_height / 2.0}"/>
+  <!-- Lateral/fore-aft jump from the wrist-pitch axis to the wrist-roll axis;
+       the measurement above assumes both are centered, so these stay zero
+       unless the housings are actually offset. Positive Y is outboard and
+       mirrors to the right arm. Moving these carries the gripper along. -->
+  <xacro:property name="wrist_roll_y_from_wrist_pitch" value="0.0"/>
+  <xacro:property name="wrist_roll_x_from_wrist_pitch" value="0.0"/>
+  <!--
+    The gripper frame is centered in X/Y and lies 16 mm below its housing top.
+    Its axis is 17.3 mm inboard of the wrist-roll outside Y face and 17.5 mm
+    above the wrist-roll bottom face.
+  -->
+  <xacro:property name="gripper_depth" value="0.05000"/>
+  <xacro:property name="gripper_width" value="0.03100"/>
+  <xacro:property name="gripper_height" value="0.10000"/>
+  <xacro:property name="gripper_axis_from_top" value="0.01600"/>
+  <xacro:property name="gripper_axis_inward_from_wrist_roll_outside" value="0.01730"/>
+  <xacro:property name="gripper_axis_up_from_wrist_roll_bottom" value="0.01750"/>
+  <xacro:property name="gripper_y_from_wrist_roll"
+    value="${wrist_roll_width / 2.0 - gripper_axis_inward_from_wrist_roll_outside}"/>
+  <xacro:property name="wrist_roll_bottom_from_axis"
+    value="${wrist_roll_height - wrist_roll_axis_from_top}"/>
+  <xacro:property name="gripper_drop"
+    value="${wrist_roll_bottom_from_axis - gripper_axis_up_from_wrist_roll_bottom}"/>
+  <xacro:property name="gripper_body_z_from_axis"
+    value="${gripper_axis_from_top - gripper_height / 2.0}"/>
+  <!--
+    Two-finger geared claw. The servo drives one finger at the measured
+    gripper axis above; the idler finger's gear axis sits a center distance
+    away along X and counter-rotates via a mimic joint. Finger envelope and
+    body offsets are taken from the finger STL extents.
+    TODO: measure the gear center distance and confirm which finger the
+    servo drives (swap the gripper_r/gripper_l meshes in arm.xacro if
+    reversed).
+  -->
+  <xacro:property name="gripper_gear_center_distance" value="0.030"/>
+  <!--
+    Fixed tool-center point used for arm IK. Its X origin is halfway between
+    the driven and idler gripper pivots, it shares their Y plane, and it lies
+    80 mm below their common Z plane. The TCP is attached to wrist_roll so
+    opening or closing the fingers cannot move the arm's IK target frame.
+  -->
+  <xacro:property name="gripper_tcp_below_pivots" value="0.080"/>
+  <!-- The wrist_roll STL's export origin is not on the wrist centerline;
+       these shift the mesh so its geometry centers over the wrist_pitch axis.
+       Visual-only: they move no frame and affect no kinematics. -->
+  <xacro:property name="wrist_roll_mesh_x" value="-0.0174"/>
+  <xacro:property name="wrist_roll_mesh_y" value="-0.0089"/>
+  <xacro:property name="gripper_finger_depth" value="0.034"/>
+  <xacro:property name="gripper_finger_width" value="0.058"/>
+  <xacro:property name="gripper_finger_height" value="0.104"/>
+  <xacro:property name="gripper_finger_body_y" value="0.023"/>
+  <xacro:property name="gripper_finger_body_z" value="-0.035"/>
+  <!-- Camera-mount STLs are millimetres. The complete left mount transform is
+       reflected across its gripper's local XZ plane, placing it at negative Y
+       with mirrored geometry. The right mount retains its separately requested
+       mirrored mesh at positive Y. -->
+  <!-- Visual-only markers for the four cameras. The camera links are bare frames
+       with no geometry, so the cameras are invisible in RViz and in any render of
+       the public bundle even though their mounts are modelled.
+
+       Sized to the Innomaker U20CAM module's lens, and deliberately SHORT (length
+       under the diameter) so each reads as a lens puck marking WHERE the camera is,
+       not a barrel implying WHICH WAY it looks. That distinction is load-bearing:
+       every *_camera_optical_joint carries rpy="0 0 0", so the frames inherit their
+       parent's orientation rather than the ROS optical convention (z forward, x
+       right, y down) their names suggest. A long cylinder on the frame's local Z
+       would point straight up out of the two lift-mounted cameras and claim a view
+       direction the model does not encode. -->
+  <!-- Camera markers are indicative only: the model carries camera POSITIONS but
+       no orientations (every *_camera_optical_joint is rpy="0 0 0"), so these
+       cylinders point wherever their parent happens to face rather than where the
+       lens actually looks. Sizes are cosmetic. -->
+  <xacro:property name="camera_marker_radius" value="0.007"/>
+  <xacro:property name="camera_marker_length" value="0.020"/>
+
+  <xacro:property name="gripper_camera_mount_mesh_scale" value="0.001"/>
+  <xacro:property name="gripper_camera_mount_y_offset" value="0.040"/>
+  <xacro:property name="left_gripper_camera_mount_x_offset" value="0.015"/>
+  <xacro:property name="right_gripper_camera_mount_x_offset" value="0.014"/>
+  <!-- Measured left camera frame position relative to its mount link. -->
+  <xacro:property name="left_wrist_camera_y_from_mount" value="-0.05341331"/>
+  <xacro:property name="left_wrist_camera_z_from_mount" value="-0.02543202"/>
+  <!-- The right frame mirrors the left in base_link. Its local X correction
+       compensates for the mounts' 15 mm versus 14 mm X offsets. -->
+  <xacro:property name="right_wrist_camera_x_from_mount"
+    value="${left_gripper_camera_mount_x_offset - right_gripper_camera_mount_x_offset}"/>
+  <xacro:property name="right_wrist_camera_y_from_mount"
+    value="${-left_wrist_camera_y_from_mount}"/>
+  <xacro:property name="right_wrist_camera_z_from_mount"
+    value="${left_wrist_camera_z_from_mount}"/>
+  <xacro:property name="deg_to_rad" value="${nori_pi / 180.0}"/>
+  <!--
+    Range of motion per joint, degrees from the modeled zero pose, positive by
+    the right-hand rule about each axis in arm.xacro. Shoulder-roll zero is the
+    laterally outward pose at the midpoint of its fallback range. Final values come from
+    encoder readings at the mechanical stops during commissioning, minus a
+    soft margin; the driver's min_raw/max_raw clamps derive from the same
+    readings. nori-calibrate-feetech-arm and arms_moveit.launch.py override
+    these shared fallback values with each side's calibrated bounds at launch,
+    so they mainly serve display and as a fallback envelope. These values have
+    been tested on hardware and are reliable.
+  -->
+  <xacro:property name="shoulder_pitch_lower_limit" value="${-180.0 * deg_to_rad}"/>
+  <xacro:property name="shoulder_pitch_upper_limit" value="${180.0 * deg_to_rad}"/>
+  <xacro:property name="shoulder_roll_lower_limit" value="${-90.0 * deg_to_rad}"/>
+  <xacro:property name="shoulder_roll_upper_limit" value="${90.0 * deg_to_rad}"/>
+  <xacro:property name="bicep_yaw_lower_limit" value="${-180.0 * deg_to_rad}"/>
+  <xacro:property name="bicep_yaw_upper_limit" value="${180.0 * deg_to_rad}"/>
+  <xacro:property name="elbow_pitch_lower_limit" value="${-90.0 * deg_to_rad}"/>
+  <xacro:property name="elbow_pitch_upper_limit" value="${90.0 * deg_to_rad}"/>
+  <xacro:property name="forearm_yaw_lower_limit" value="${-180.0 * deg_to_rad}"/>
+  <xacro:property name="forearm_yaw_upper_limit" value="${180.0 * deg_to_rad}"/>
+  <xacro:property name="wrist_pitch_lower_limit" value="${-90.0 * deg_to_rad}"/>
+  <xacro:property name="wrist_pitch_upper_limit" value="${90.0 * deg_to_rad}"/>
+  <xacro:property name="wrist_roll_lower_limit" value="${-90.0 * deg_to_rad}"/>
+  <xacro:property name="wrist_roll_upper_limit" value="${90.0 * deg_to_rad}"/>
+  <xacro:property name="gripper_lower_limit" value="${0.0 * deg_to_rad}"/>
+  <xacro:property name="gripper_upper_limit" value="${90.0 * deg_to_rad}"/>
+  <xacro:property name="arm_effort_limit" value="4.0"/>
+  <xacro:property name="arm_velocity_limit" value="3.0"/>
+
+  <!--
+    Materials, named by what the part is actually made of rather than by colour,
+    so a finish change is a one-line edit here instead of a rename everywhere.
+
+    URDF materials carry colour only - no roughness or metalness - so these are
+    base colours and every renderer applies its own shading model on top. Values
+    are approximate finishes, not measured colours.
+  -->
+
+  <!-- Arm links and grippers: dark grey moulded plastic. -->
+  <material name="nori_arm_plastic">
+    <color rgba="0.16 0.17 0.18 1.0"/>
+  </material>
+
+  <!-- Chassis: darker than the arms, slightly warmer. -->
+  <material name="nori_chassis">
+    <color rgba="0.11 0.12 0.13 1.0"/>
+  </material>
+
+  <!-- Lift sections: bare metal.
+       NOTE materials.yaml still assigns these links to body_mat ("foam-covered,
+       near-fully matte"), which is out of date. Until that is corrected the viewer
+       carries a temporary finish override; see FINISH_OVERRIDES in
+       nori/components/RobotUrdfViewer.tsx. -->
+  <material name="nori_lift_metal">
+    <color rgba="0.34 0.35 0.37 1.0"/>
+  </material>
+
+  <!-- Tyres and caster treads: near-black rubber. -->
+  <material name="nori_tyre">
+    <color rgba="0.07 0.07 0.08 1.0"/>
+  </material>
+
+  <!-- Sensor housings. -->
+  <material name="nori_sensor">
+    <color rgba="0.18 0.19 0.21 1.0"/>
+  </material>
+
+  <!-- Display glass: darker and cooler than the body plastic. -->
+  <material name="nori_screen">
+    <color rgba="0.05 0.06 0.08 1.0"/>
+  </material>
+
+  <!-- Eyes: brighter than the body white so they read as lit against the screen. -->
+  <material name="nori_eye">
+    <color rgba="0.99 0.99 0.99 1.0"/>
+  </material>
+
+  <!-- Near-white: head and the torso's upper cap. -->
+  <material name="nori_white">
+    <color rgba="0.93 0.94 0.95 1.0"/>
+  </material>
+
+  <!-- Light shell panels. -->
+  <material name="nori_shell">
+    <color rgba="0.80 0.81 0.83 1.0"/>
+  </material>
+
+  <!-- One definition for all four camera markers so they cannot drift apart.
+       Visual only: no <collision> and no <inertial>, because these represent
+       nothing the robot can hit and carry no mass of their own (the camera's mass
+       is already accounted for in its mount). -->
+  <!--
+    A camera as TWO frames, which is the standard ROS pattern and the only readable
+    way to express this:
+
+      <name>_mount_frame    body-aligned, carries the AIM as a plain pitch angle
+      <name>_optical_frame  the fixed REP-103 optical transform on top of it
+                            (+Z out of the lens, +X right, +Y down)
+
+    Done as a single joint instead, the aim and the optical convention multiply into
+    one rpy triple that nobody can sanity-check or adjust - "is 35 degrees down
+    still 35 degrees down after the optical rotation?" has no obvious answer. Split,
+    the pitch below is just the angle someone measured.
+
+    POSITIVE pitch aims DOWN (a +Y rotation swings +X toward -Z in this frame).
+    Optical frame NAMES are unchanged, so anything resolving TF to them still works;
+    only their parent moved.
+  -->
+  <xacro:macro name="nori_camera" params="name parent xyz pitch:=0 yaw:=0 roll:=0">
+    <link name="${name}_mount_frame"/>
+    <joint name="${name}_mount_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${name}_mount_frame"/>
+      <!-- The aim axis depends on how the PARENT link is oriented. Torso-mounted
+           cameras hang off lift_top_link, which is base-aligned, so their aim is a
+           pitch about Y. The gripper camera mounts are rotated: their local Z is
+           what points along the robot's Y, so those aim with yaw instead. Hence
+           three optional angles rather than one hard-coded pitch. -->
+      <origin xyz="${xyz}" rpy="${roll} ${pitch} ${yaw}"/>
+    </joint>
+
+    <link name="${name}_optical_frame">
+      <xacro:nori_camera_marker/>
+    </link>
+    <joint name="${name}_optical_joint" type="fixed">
+      <parent link="${name}_mount_frame"/>
+      <child link="${name}_optical_frame"/>
+      <origin xyz="0 0 0" rpy="${-nori_pi / 2.0} 0 ${-nori_pi / 2.0}"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Cap rake and head tilt, shared: visual_standins.xacro draws with them, and
+       the overhead camera's aim is derived from them below. Kept here rather than
+       in visual_standins.xacro because properties.xacro is parsed first. -->
+  <xacro:property name="cap_pitch_deg" value="35.0"/>
+  <xacro:property name="head_pitch_deg" value="5.0"/>
+
+  <!-- Measured aim angles, degrees. -->
+  <xacro:property name="front_camera_pitch_deg" value="0.0"/>
+  <!--
+    Square to the cap plate, not parallel to it. A plate raked UP has a surface
+    normal 90 deg away, so matching the cap's own angle aimed the camera ALONG the
+    plate rather than through it.
+
+    Both angles matter: the cap is drawn on the head, and the head is itself
+    pitched up, so the plate's true rake off horizontal is cap + head. The camera
+    hangs off lift_top_link, which is base-aligned, so it needs the total.
+  -->
+  <xacro:property name="overhead_camera_pitch_deg"
+    value="${90.0 - cap_pitch_deg - head_pitch_deg}"/>
+  <!--
+    Wrist cameras need TWO angles, not one.
+
+    The camera mount's own X axis points BACKWARD along the robot (-X in base), so
+    tilting it by 45 deg alone just tilts a backward-facing camera - it never turns
+    to face the hand. The yaw swings it round to look along the arm toward the
+    gripper; the pitch is then the 45 deg rake down toward the fingers.
+
+    Sanity check at zero pose: mount to gripper TCP is [0, 0.894, -0.447], i.e.
+    outboard and about 27 deg down. With yaw 90 / pitch 45 the camera looks
+    outboard and 45 deg down - along the arm, aimed slightly below the TCP so the
+    grasp and the surface under it are both in frame.
+  -->
+  <xacro:property name="wrist_camera_yaw_deg" value="90.0"/>
+  <xacro:property name="wrist_camera_pitch_deg" value="45.0"/>
+
+  <xacro:macro name="nori_camera_marker" params="">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${camera_marker_radius}" length="${camera_marker_length}"/>
+      </geometry>
+      <material name="nori_sensor"/>
+    </visual>
+  </xacro:macro>
+
+  <!-- Inertia tensors, computed from each link's primitive envelope and its
+       mass from config/inertial_parameters.yaml. Uniform density is assumed,
+       so these are approximations: good enough for kinematics, visualization,
+       and general-purpose simulation, not for torque-level sim-to-real. -->
+  <xacro:macro name="box_inertial" params="mass length width height origin_xyz">
+    <inertial>
+      <origin xyz="${origin_xyz}" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+        ixx="${mass * (width * width + height * height) / 12.0}" ixy="0.0" ixz="0.0"
+        iyy="${mass * (length * length + height * height) / 12.0}" iyz="0.0"
+        izz="${mass * (length * length + width * width) / 12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Cylinder inertia is expressed about the cylinder's local Z axis. -->
+  <xacro:macro name="cylinder_inertial" params="mass radius length origin_xyz rpy">
+    <inertial>
+      <origin xyz="${origin_xyz}" rpy="${rpy}"/>
+      <mass value="${mass}"/>
+      <inertia
+        ixx="${mass * (3.0 * radius * radius + length * length) / 12.0}" ixy="0.0" ixz="0.0"
+        iyy="${mass * (3.0 * radius * radius + length * length) / 12.0}" iyz="0.0"
+        izz="${mass * radius * radius / 2.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="sphere_inertial" params="mass radius">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia
+        ixx="${2.0 * mass * radius * radius / 5.0}" ixy="0.0" ixz="0.0"
+        iyy="${2.0 * mass * radius * radius / 5.0}" iyz="0.0"
+        izz="${2.0 * mass * radius * radius / 5.0}"/>
+    </inertial>
+  </xacro:macro>
+</robot>

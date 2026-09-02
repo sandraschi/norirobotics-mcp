@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!--
+  Loads measured mass data from config/inertial_parameters.yaml and exposes it
+  as the mass properties the rest of the description already uses.
+
+  Why the values live in YAML rather than here: masses are the one part of this
+  model that comes from a scale rather than from CAD, they arrive piecemeal as
+  hardware is measured, and they are the numbers most likely to be edited by
+  someone who is not editing anything else. Keeping them in one flat file means
+  a measurement session touches exactly one file and cannot break the geometry.
+
+  The inertia TENSORS are not stored here. They are recomputed by the
+  box/cylinder/sphere macros in properties.xacro from these masses and the
+  primitive envelopes already measured from CAD, so updating a mass updates its
+  inertia automatically.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:property
+    name="nori_inertial_cfg"
+    value="${xacro.load_yaml('$(find nori_description)/config/inertial_parameters.yaml')}"/>
+  <xacro:property name="nori_links" value="${nori_inertial_cfg['links']}"/>
+
+  <!-- Base -->
+  <xacro:property name="base_mass" value="${nori_links['base_link']['mass']}"/>
+  <xacro:property name="wheel_mass" value="${nori_links['wheel']['mass']}"/>
+  <xacro:property name="caster_mass" value="${nori_links['caster']['mass']}"/>
+
+  <!-- Lift: three stages, individually specified. `lift_stage_mass` is kept as
+       an alias for the bottom stage so any older call site still resolves. -->
+  <xacro:property name="lift_bottom_mass" value="${nori_links['lift_bottom']['mass']}"/>
+  <xacro:property name="lift_middle_mass" value="${nori_links['lift_middle']['mass']}"/>
+  <xacro:property name="lift_top_mass" value="${nori_links['lift_top']['mass']}"/>
+  <xacro:property name="lift_stage_mass" value="${lift_bottom_mass}"/>
+
+  <!-- Arm, per side. Left and right are mirror-identical. -->
+  <xacro:property name="shoulder_pitch_mass" value="${nori_links['shoulder_pitch']['mass']}"/>
+  <xacro:property name="shoulder_roll_mass" value="${nori_links['shoulder_roll']['mass']}"/>
+  <xacro:property name="bicep_yaw_mass" value="${nori_links['bicep_yaw']['mass']}"/>
+  <xacro:property name="elbow_pitch_mass" value="${nori_links['elbow_pitch']['mass']}"/>
+  <xacro:property name="forearm_yaw_mass" value="${nori_links['forearm_yaw']['mass']}"/>
+  <xacro:property name="wrist_pitch_mass" value="${nori_links['wrist_pitch']['mass']}"/>
+  <xacro:property name="wrist_roll_mass" value="${nori_links['wrist_roll']['mass']}"/>
+
+  <!-- One finger. arm.xacro builds two fingers per gripper. -->
+  <xacro:property name="gripper_finger_mass" value="${nori_links['gripper_finger']['mass']}"/>
+
+  <!-- Upper body (torso shell, neck, head) -->
+  <xacro:property name="torso_mass" value="${nori_links['torso']['mass']}"/>
+  <xacro:property name="neck_mass" value="${nori_links['neck']['mass']}"/>
+  <xacro:property name="head_mass" value="${nori_links['head']['mass']}"/>
+
+  <!-- Sensors -->
+  <xacro:property name="lidar_mass" value="${nori_links['lidar']['mass']}"/>
+  <xacro:property name="imu_mass" value="${nori_links['imu']['mass']}"/>
+
+</robot>

@@ -1,0 +1,466 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    positive_direction is motion viewed from each servo's output shaft.
+    Rotary-arm centers, directions, and raw bounds are loaded from the manual
+    calibration file when the complete two-arm macro is selected. An absent or
+    incomplete joint entry keeps that joint torque-disabled.
+  -->
+
+  <xacro:macro name="nori_feetech_position_joint"
+      params="name id model positive_direction acceleration max_speed_raw
+              units_per_revolution:=6.283185307179586 position_center:=2048
+              min_raw:=0 max_raw:=4095 position_control:=servo
+              calibration_file:=none initial_position:=0.0
+              use_mock_hardware:=false expected_model_number:=none
+              passive:=false">
+    <joint name="${name}">
+      <command_interface name="position"/>
+      <!-- Mock hardware otherwise starts every joint at 0, and the all-zeros
+           arm pose is exactly rank-deficient (Jacobian rank 5 of 6), so
+           MoveIt Servo refuses to jog it at all. That made every simulated
+           launch come up in the one pose Cartesian teleoperation cannot use,
+           and it had to be driven out by hand each time. Real hardware reads
+           its encoders and ignores this. -->
+      <state_interface name="position">
+        <xacro:if value="${use_mock_hardware}">
+          <param name="initial_value">${initial_position}</param>
+        </xacro:if>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <param name="id">${id}</param>
+      <param name="model">${model}</param>
+      <param name="positive_direction">${positive_direction}</param>
+      <param name="position_center">${position_center}</param>
+      <param name="min_raw">${min_raw}</param>
+      <param name="max_raw">${max_raw}</param>
+      <param name="max_speed_raw">${max_speed_raw}</param>
+      <param name="acceleration">${acceleration}</param>
+      <param name="units_per_revolution">${units_per_revolution}</param>
+      <param name="position_control">${position_control}</param>
+      <param name="calibration_file">${calibration_file}</param>
+      <param name="passive">${passive}</param>
+      <xacro:if value="${expected_model_number != 'none'}">
+        <param name="expected_model_number">${expected_model_number}</param>
+      </xacro:if>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="nori_feetech_wheel_joint"
+      params="name id positive_direction acceleration max_speed_raw
+              velocity_steps_per_raw:=1.0">
+    <joint name="${name}">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <param name="id">${id}</param>
+      <param name="model">sts3215</param>
+      <param name="positive_direction">${positive_direction}</param>
+      <param name="max_speed_raw">${max_speed_raw}</param>
+      <param name="acceleration">${acceleration}</param>
+      <param name="velocity_steps_per_raw">${velocity_steps_per_raw}</param>
+    </joint>
+  </xacro:macro>
+
+  <!-- Normal robot configuration: wheel IDs 9-10. -->
+  <xacro:macro name="nori_feetech_base_ros2_control"
+      params="left_bus_port:=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B79016521-if00 baud_rate:=1000000
+              response_timeout_ms:=12 max_read_failures:=3
+              wheel_acceleration:=20 wheel_max_speed_raw:=2200
+              wheel_velocity_steps_per_raw:=1.0
+              use_mock_hardware:=false
+              passive_mode:=false">
+    <ros2_control name="left_arm_and_base_bus" type="system">
+      <hardware>
+        <xacro:if value="${use_mock_hardware}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${use_mock_hardware}">
+          <plugin>nori_feetech_hardware/FeetechSystem</plugin>
+          <param name="port">${left_bus_port}</param>
+          <param name="baud_rate">${baud_rate}</param>
+          <param name="response_timeout_ms">${response_timeout_ms}</param>
+          <param name="max_read_failures">${max_read_failures}</param>
+          <param name="passive_mode">${passive_mode}</param>
+        </xacro:unless>
+      </hardware>
+
+      <!-- Robot-centric IDs and mounted polarities, verified one wheel at a time. -->
+      <xacro:nori_feetech_wheel_joint name="left_wheel_joint" id="9"
+        positive_direction="counterclockwise" acceleration="${wheel_acceleration}"
+        max_speed_raw="${wheel_max_speed_raw}"
+        velocity_steps_per_raw="${wheel_velocity_steps_per_raw}"/>
+      <xacro:nori_feetech_wheel_joint name="right_wheel_joint" id="10"
+        positive_direction="clockwise" acceleration="${wheel_acceleration}"
+        max_speed_raw="${wheel_max_speed_raw}"
+        velocity_steps_per_raw="${wheel_velocity_steps_per_raw}"/>
+    </ros2_control>
+  </xacro:macro>
+
+  <!-- Commissioning configuration for one rotary-arm bus, IDs 1-8 only. -->
+  <xacro:macro name="nori_feetech_arm_ros2_control"
+      params="side bus_port calibration_file
+              baud_rate:=1000000 response_timeout_ms:=12 max_read_failures:=3
+              arm_direction:=clockwise arm_acceleration:=10
+              arm_max_speed_raw:=200 use_mock_hardware:=false
+              passive_mode:=false">
+    <ros2_control name="${side}_arm_bus" type="system">
+      <hardware>
+        <xacro:if value="${use_mock_hardware}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${use_mock_hardware}">
+          <plugin>nori_feetech_hardware/FeetechSystem</plugin>
+          <param name="port">${bus_port}</param>
+          <param name="baud_rate">${baud_rate}</param>
+          <param name="response_timeout_ms">${response_timeout_ms}</param>
+          <param name="max_read_failures">${max_read_failures}</param>
+          <param name="passive_mode">${passive_mode}</param>
+        </xacro:unless>
+      </hardware>
+
+      <xacro:nori_feetech_position_joint name="${side}_shoulder_pitch_joint" id="1" model="sts3095"
+        positive_direction="${arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${calibration_file}"
+        use_mock_hardware="${use_mock_hardware}"
+        initial_position="2.35"/>
+      <xacro:nori_feetech_position_joint name="${side}_shoulder_roll_joint" id="2" model="sts3095"
+        positive_direction="${arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${calibration_file}"
+        use_mock_hardware="${use_mock_hardware}"
+        initial_position="-0.60"/>
+      <xacro:nori_feetech_position_joint name="${side}_bicep_yaw_joint" id="3" model="sts3250"
+        positive_direction="${arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${calibration_file}"
+        use_mock_hardware="${use_mock_hardware}"
+        initial_position="1.75"/>
+      <xacro:nori_feetech_position_joint name="${side}_elbow_pitch_joint" id="4" model="sts3095"
+        positive_direction="${arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${calibration_file}"
+        use_mock_hardware="${use_mock_hardware}"
+        initial_position="1.20"/>
+      <xacro:nori_feetech_position_joint name="${side}_forearm_yaw_joint" id="5" model="sts3215"
+        positive_direction="${arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${calibration_file}"
+        use_mock_hardware="${use_mock_hardware}"
+        initial_position="1.55"/>
+      <xacro:nori_feetech_position_joint name="${side}_wrist_pitch_joint" id="6" model="sts3215"
+        positive_direction="${arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${calibration_file}"
+        use_mock_hardware="${use_mock_hardware}"
+        initial_position="0.50"/>
+      <xacro:nori_feetech_position_joint name="${side}_wrist_roll_joint" id="7" model="sts3215"
+        positive_direction="${arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${calibration_file}"
+        use_mock_hardware="${use_mock_hardware}"
+        initial_position="-0.90"/>
+      <xacro:nori_feetech_position_joint name="${side}_gripper_joint" id="8" model="sts3215"
+        positive_direction="${arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${calibration_file}"
+        use_mock_hardware="${use_mock_hardware}"/>
+    </ros2_control>
+  </xacro:macro>
+
+  <xacro:macro name="nori_feetech_left_arm_ros2_control"
+      params="left_bus_port:=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B79016521-if00
+              left_arm_calibration_file:=~/.config/nori/left_arm_calibration.yaml
+              baud_rate:=1000000 response_timeout_ms:=12 max_read_failures:=3
+              arm_direction:=clockwise arm_acceleration:=10
+              arm_max_speed_raw:=200 use_mock_hardware:=false
+              passive_mode:=false">
+    <xacro:nori_feetech_arm_ros2_control
+      side="left"
+      bus_port="${left_bus_port}"
+      calibration_file="${left_arm_calibration_file}"
+      baud_rate="${baud_rate}"
+      response_timeout_ms="${response_timeout_ms}"
+      max_read_failures="${max_read_failures}"
+      arm_direction="${arm_direction}"
+      arm_acceleration="${arm_acceleration}"
+      arm_max_speed_raw="${arm_max_speed_raw}"
+      use_mock_hardware="${use_mock_hardware}"
+      passive_mode="${passive_mode}"/>
+  </xacro:macro>
+
+  <!-- Passive leader configuration: one all-STS3215 bus, IDs 1-8 only.
+       passive_mode is intentionally a literal and cannot be overridden. -->
+  <xacro:macro name="nori_feetech_leader_arm_ros2_control"
+      params="side bus_port calibration_file expected_model_number
+              baud_rate:=1000000 response_timeout_ms:=12 max_read_failures:=3">
+    <ros2_control name="leader_${side}_arm_bus" type="system">
+      <hardware>
+        <plugin>nori_feetech_hardware/FeetechSystem</plugin>
+        <param name="port">${bus_port}</param>
+        <param name="baud_rate">${baud_rate}</param>
+        <param name="response_timeout_ms">${response_timeout_ms}</param>
+        <param name="max_read_failures">${max_read_failures}</param>
+        <param name="passive_mode">true</param>
+      </hardware>
+
+      <xacro:nori_feetech_position_joint
+        name="${side}_shoulder_pitch_joint" id="1" model="sts3215"
+        positive_direction="clockwise" acceleration="0" max_speed_raw="1"
+        calibration_file="${calibration_file}"
+        expected_model_number="${expected_model_number}"/>
+      <xacro:nori_feetech_position_joint
+        name="${side}_shoulder_roll_joint" id="2" model="sts3215"
+        positive_direction="clockwise" acceleration="0" max_speed_raw="1"
+        calibration_file="${calibration_file}"
+        expected_model_number="${expected_model_number}"/>
+      <xacro:nori_feetech_position_joint
+        name="${side}_bicep_yaw_joint" id="3" model="sts3215"
+        positive_direction="clockwise" acceleration="0" max_speed_raw="1"
+        calibration_file="${calibration_file}"
+        expected_model_number="${expected_model_number}"/>
+      <xacro:nori_feetech_position_joint
+        name="${side}_elbow_pitch_joint" id="4" model="sts3215"
+        positive_direction="clockwise" acceleration="0" max_speed_raw="1"
+        calibration_file="${calibration_file}"
+        expected_model_number="${expected_model_number}"/>
+      <xacro:nori_feetech_position_joint
+        name="${side}_forearm_yaw_joint" id="5" model="sts3215"
+        positive_direction="clockwise" acceleration="0" max_speed_raw="1"
+        calibration_file="${calibration_file}"
+        expected_model_number="${expected_model_number}"/>
+      <xacro:nori_feetech_position_joint
+        name="${side}_wrist_pitch_joint" id="6" model="sts3215"
+        positive_direction="clockwise" acceleration="0" max_speed_raw="1"
+        calibration_file="${calibration_file}"
+        expected_model_number="${expected_model_number}"/>
+      <xacro:nori_feetech_position_joint
+        name="${side}_wrist_roll_joint" id="7" model="sts3215"
+        positive_direction="clockwise" acceleration="0" max_speed_raw="1"
+        calibration_file="${calibration_file}"
+        expected_model_number="${expected_model_number}"/>
+      <xacro:nori_feetech_position_joint
+        name="${side}_gripper_joint" id="8" model="sts3215"
+        positive_direction="clockwise" acceleration="0" max_speed_raw="1"
+        calibration_file="${calibration_file}"
+        expected_model_number="${expected_model_number}"/>
+    </ros2_control>
+  </xacro:macro>
+
+  <xacro:macro name="nori_feetech_leader_dual_arm_ros2_control"
+      params="left_bus_port right_bus_port
+              left_calibration_file right_calibration_file
+              left_expected_model_number right_expected_model_number
+              baud_rate:=1000000
+              response_timeout_ms:=12 max_read_failures:=3">
+    <xacro:nori_feetech_leader_arm_ros2_control
+      side="left"
+      bus_port="${left_bus_port}"
+      calibration_file="${left_calibration_file}"
+      expected_model_number="${left_expected_model_number}"
+      baud_rate="${baud_rate}"
+      response_timeout_ms="${response_timeout_ms}"
+      max_read_failures="${max_read_failures}"/>
+    <xacro:nori_feetech_leader_arm_ros2_control
+      side="right"
+      bus_port="${right_bus_port}"
+      calibration_file="${right_calibration_file}"
+      expected_model_number="${right_expected_model_number}"
+      baud_rate="${baud_rate}"
+      response_timeout_ms="${response_timeout_ms}"
+      max_read_failures="${max_read_failures}"/>
+  </xacro:macro>
+
+  <xacro:macro name="nori_feetech_dual_arm_ros2_control"
+      params="left_bus_port right_bus_port
+              left_arm_calibration_file right_arm_calibration_file
+              baud_rate:=1000000 response_timeout_ms:=12 max_read_failures:=3
+              arm_acceleration:=10 arm_max_speed_raw:=200
+              use_mock_hardware:=false passive_mode:=false">
+    <xacro:nori_feetech_arm_ros2_control
+      side="left"
+      bus_port="${left_bus_port}"
+      calibration_file="${left_arm_calibration_file}"
+      baud_rate="${baud_rate}"
+      response_timeout_ms="${response_timeout_ms}"
+      max_read_failures="${max_read_failures}"
+      arm_acceleration="${arm_acceleration}"
+      arm_max_speed_raw="${arm_max_speed_raw}"
+      use_mock_hardware="${use_mock_hardware}"
+      passive_mode="${passive_mode}"/>
+    <xacro:nori_feetech_arm_ros2_control
+      side="right"
+      bus_port="${right_bus_port}"
+      calibration_file="${right_arm_calibration_file}"
+      baud_rate="${baud_rate}"
+      response_timeout_ms="${response_timeout_ms}"
+      max_read_failures="${max_read_failures}"
+      arm_acceleration="${arm_acceleration}"
+      arm_max_speed_raw="${arm_max_speed_raw}"
+      use_mock_hardware="${use_mock_hardware}"
+      passive_mode="${passive_mode}"/>
+  </xacro:macro>
+
+  <xacro:macro name="nori_feetech_ros2_control"
+      params="left_bus_port:=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B79016521-if00 right_bus_port:=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B3E090601-if00
+              left_arm_calibration_file:=~/.config/nori/left_arm_calibration.yaml
+              right_arm_calibration_file:=~/.config/nori/right_arm_calibration.yaml
+              baud_rate:=1000000 response_timeout_ms:=12 max_read_failures:=3
+              left_arm_direction:=clockwise right_arm_direction:=clockwise
+              arm_acceleration:=20 arm_max_speed_raw:=500
+              wheel_acceleration:=20 wheel_max_speed_raw:=1500
+              wheel_velocity_steps_per_raw:=1.0
+              use_mock_hardware:=false
+              passive_mode:=false">
+    <!-- Bus 1: left arm at IDs 1-8 and both base wheels at IDs 9-10. -->
+    <!-- initial_position mirrors nori_feetech_arm_ros2_control and is the
+         READY pose, not zero. It applies to MOCK hardware only, where a joint
+         with no initial_value starts at 0, and all-zeros is the URDF zero
+         pose, which is exactly rank-deficient (rank 5 of 6: the arm is fully
+         extended and its joint origins are collinear). Servo cannot jog a
+         Cartesian direction that does not exist, so it refuses immediately.
+         Without these, every mock session had to begin with nori-vr-ready. -->
+    <ros2_control name="left_arm_and_base_bus" type="system">
+      <hardware>
+        <!-- Mirrors nori_feetech_arm_ros2_control. Without this branch the
+             combined description could only ever run on real motors, so the
+             first execution of a combined launch would be both arms and the
+             wheels live at once, skipping the entire
+             mock-hardware ladder the arms were brought up on. -->
+        <xacro:if value="${use_mock_hardware}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${use_mock_hardware}">
+          <plugin>nori_feetech_hardware/FeetechSystem</plugin>
+          <param name="port">${left_bus_port}</param>
+          <param name="baud_rate">${baud_rate}</param>
+          <param name="response_timeout_ms">${response_timeout_ms}</param>
+          <param name="max_read_failures">${max_read_failures}</param>
+          <!-- The arms below use per-joint passive mode so wheel IDs 9-10
+               can remain active on this shared bus. -->
+          <param name="passive_mode">false</param>
+        </xacro:unless>
+      </hardware>
+
+      <xacro:nori_feetech_position_joint name="left_shoulder_pitch_joint" id="1" model="sts3095"
+        positive_direction="${left_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${left_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="2.35"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="left_shoulder_roll_joint" id="2" model="sts3095"
+        positive_direction="${left_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${left_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="-0.60"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="left_bicep_yaw_joint" id="3" model="sts3250"
+        positive_direction="${left_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${left_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="1.75"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="left_elbow_pitch_joint" id="4" model="sts3095"
+        positive_direction="${left_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${left_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="1.20"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="left_forearm_yaw_joint" id="5" model="sts3215"
+        positive_direction="${left_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${left_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="1.55"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="left_wrist_pitch_joint" id="6" model="sts3215"
+        positive_direction="${left_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${left_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="0.50"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="left_wrist_roll_joint" id="7" model="sts3215"
+        positive_direction="${left_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${left_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="-0.90"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="left_gripper_joint" id="8" model="sts3215"
+        positive_direction="${left_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${left_arm_calibration_file}"
+        passive="${passive_mode}"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <!-- Robot-centric IDs and mounted polarities, verified one wheel at a time. -->
+      <xacro:nori_feetech_wheel_joint name="left_wheel_joint" id="9"
+        positive_direction="counterclockwise" acceleration="${wheel_acceleration}"
+        max_speed_raw="${wheel_max_speed_raw}"
+        velocity_steps_per_raw="${wheel_velocity_steps_per_raw}"/>
+      <xacro:nori_feetech_wheel_joint name="right_wheel_joint" id="10"
+        positive_direction="clockwise" acceleration="${wheel_acceleration}"
+        max_speed_raw="${wheel_max_speed_raw}"
+        velocity_steps_per_raw="${wheel_velocity_steps_per_raw}"/>
+    </ros2_control>
+
+    <!-- Bus 2: right arm IDs 1-8; no base motors. -->
+    <ros2_control name="right_arm_bus" type="system">
+      <hardware>
+        <!-- Mirrors nori_feetech_arm_ros2_control. Without this branch the
+             combined description could only ever run on real motors, so the
+             first execution of a combined launch would be both arms and the
+             wheels live at once, skipping the entire
+             mock-hardware ladder the arms were brought up on. -->
+        <xacro:if value="${use_mock_hardware}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${use_mock_hardware}">
+          <plugin>nori_feetech_hardware/FeetechSystem</plugin>
+          <param name="port">${right_bus_port}</param>
+          <param name="baud_rate">${baud_rate}</param>
+          <param name="response_timeout_ms">${response_timeout_ms}</param>
+          <param name="max_read_failures">${max_read_failures}</param>
+          <param name="passive_mode">false</param>
+        </xacro:unless>
+      </hardware>
+
+      <xacro:nori_feetech_position_joint name="right_shoulder_pitch_joint" id="1" model="sts3095"
+        positive_direction="${right_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${right_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="2.35"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="right_shoulder_roll_joint" id="2" model="sts3095"
+        positive_direction="${right_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${right_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="-0.60"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="right_bicep_yaw_joint" id="3" model="sts3250"
+        positive_direction="${right_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${right_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="1.75"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="right_elbow_pitch_joint" id="4" model="sts3095"
+        positive_direction="${right_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${right_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="1.20"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="right_forearm_yaw_joint" id="5" model="sts3215"
+        positive_direction="${right_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${right_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="1.55"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="right_wrist_pitch_joint" id="6" model="sts3215"
+        positive_direction="${right_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${right_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="0.50"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="right_wrist_roll_joint" id="7" model="sts3215"
+        positive_direction="${right_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${right_arm_calibration_file}"
+        passive="${passive_mode}"
+        initial_position="-0.90"
+        use_mock_hardware="${use_mock_hardware}"/>
+      <xacro:nori_feetech_position_joint name="right_gripper_joint" id="8" model="sts3215"
+        positive_direction="${right_arm_direction}" acceleration="${arm_acceleration}" max_speed_raw="${arm_max_speed_raw}"
+        calibration_file="${right_arm_calibration_file}"
+        passive="${passive_mode}"
+        use_mock_hardware="${use_mock_hardware}"/>
+    </ros2_control>
+  </xacro:macro>
+</robot>

@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- One SystemInterface owns the Pico USB endpoint, central lift joint, IMU,
+       and battery telemetry. Only the actuated top-stage coordinate is
+       exported; lift_middle_joint follows it through the URDF mimic relation. -->
+  <xacro:macro name="nori_pico_ros2_control"
+      params="port calibration_file baud_rate:=115200 command_pwm:=180 turbo_pwm:=255
+              home_on_activate:=true use_mock_hardware:=false">
+    <ros2_control name="pico_lift_and_sensors" type="system">
+      <hardware>
+        <xacro:if value="${use_mock_hardware}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${use_mock_hardware}">
+          <plugin>nori_pico/PicoSystem</plugin>
+          <param name="port">${port}</param>
+          <param name="baud_rate">${baud_rate}</param>
+          <param name="calibration_file">${calibration_file}</param>
+          <param name="frame_id">imu_link</param>
+          <param name="lower_height_mm">515</param>
+          <param name="upper_height_mm">1235</param>
+          <param name="command_pwm">${command_pwm}</param>
+          <param name="turbo_pwm">${turbo_pwm}</param>
+          <param name="turbo_timeout_ms">300</param>
+          <param name="turbo_topic">/central_lift/turbo</param>
+          <param name="tracking_timeout_ms">300</param>
+          <param name="tracking_topic">/central_lift/tracking</param>
+          <param name="home_on_activate">${home_on_activate}</param>
+          <param name="stale_timeout_ms">300</param>
+          <param name="connect_timeout_ms">5000</param>
+          <param name="home_timeout_ms">65000</param>
+          <param name="low_voltage">22.5</param>
+          <param name="critical_voltage">22.0</param>
+          <param name="charging_voltage">27.0</param>
+          <param name="maximum_voltage">30.5</param>
+        </xacro:unless>
+      </hardware>
+
+      <joint name="lift_extension_joint">
+        <command_interface name="position">
+          <param name="min">0.0</param>
+          <param name="max">${lift_travel}</param>
+        </command_interface>
+        <state_interface name="position">
+          <xacro:if value="${use_mock_hardware}">
+            <param name="initial_value">0.0</param>
+          </xacro:if>
+        </state_interface>
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+  </xacro:macro>
+</robot>
