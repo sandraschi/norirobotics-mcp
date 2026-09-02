@@ -1,4 +1,4 @@
-import { Box, PersonStanding, RotateCcw } from "lucide-react";
+import { Box, Lightbulb, PersonStanding, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ export function ViewerPage() {
   } | null>(null);
   const [wireframe, setWireframe] = useState(false);
   const [waving, setWaving] = useState(false);
+  const [lightOrbit, setLightOrbit] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -55,6 +56,12 @@ export function ViewerPage() {
     const next = !waving;
     setWaving(next);
     viewerRef.current?.setDemoAnimation(next);
+  };
+
+  const toggleLightOrbit = () => {
+    const next = !lightOrbit;
+    setLightOrbit(next);
+    viewerRef.current?.setLightOrbit(next);
   };
 
   return (
@@ -93,6 +100,15 @@ export function ViewerPage() {
           >
             <PersonStanding className="h-4 w-4 mr-1" />
             {waving ? "Stop wave" : "Wave demo"}
+          </Button>
+          <Button
+            variant={lightOrbit ? "default" : "outline"}
+            size="sm"
+            onClick={toggleLightOrbit}
+            disabled={status !== "ready"}
+          >
+            <Lightbulb className="h-4 w-4 mr-1" />
+            {lightOrbit ? "Stop light" : "Circle light"}
           </Button>
           <Button variant="outline" size="sm" onClick={toggleWireframe}>
             {wireframe ? "Solid" : "Wireframe"}
@@ -139,6 +155,7 @@ export function ViewerPage() {
             wrist joints (real axes/limits from the URDF), not a physically
             simulated trajectory
           </li>
+          <li>Circle light — orbits the spotlight around the robot</li>
         </ul>
       </Card>
     </div>

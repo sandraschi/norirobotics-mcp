@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased] — 2026-09-02 (viewer lighting)
+
+### Improved — 3D Viewer lighting
+- The rig looked too dark/flat under the previous flat-ambient + two-directional-light setup.
+  Replaced flat ambient with a `HemisphereLight` (sky/ground blend) for a softer, more natural
+  background fill, plus a `SpotLight` (the "pedestal highlight") positioned relative to the
+  loaded model's actual bounding box.
+- New "Circle light" toggle in `ViewerPage.tsx` orbits the spotlight around the robot
+  (`decay=1`, tuned for this scene's small ~1m scale rather than physically-correct
+  inverse-square falloff, which is too aggressive to look right at this distance) — stopping
+  it returns the light to its static home position, mirroring the existing Wave-demo toggle
+  pattern.
+- Browser-verified: visibly brighter/higher-contrast render, orbit toggle moves the highlight
+  and shadow correctly and restores cleanly on stop, zero new console errors, tsc/biome clean.
+
 ## [Unreleased] — 2026-09-02 (missing mesh parts + demo animation)
 
 ### Fixed — head/torso/telescopic-lift-column missing from the exported mesh

@@ -69,6 +69,11 @@ export class BotViewer {
   private waveStart = 0;
   private waveOn = false;
   private clock = new THREE.Clock();
+  private spot: THREE.SpotLight;
+  private spotHomePos = new THREE.Vector3(2, 2.5, 2);
+  private spotOrbitRadius = 2;
+  private spotOrbitHeight = 2.5;
+  private spotOrbitOn = false;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -93,15 +98,33 @@ export class BotViewer {
     this.controls.minDistance = 0.3;
     this.controls.maxDistance = 8;
 
-    const ambient = new THREE.AmbientLight(0x404060, 1.2);
+    // Soft background ambient: a hemisphere light (sky/ground blend) reads more natural
+    // than flat ambient alone, plus a little flat ambient so nothing goes fully black.
+    const hemi = new THREE.HemisphereLight(0x9fb4d8, 0x2a2a35, 2.4);
+    this.scene.add(hemi);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.7);
     this.scene.add(ambient);
-    const dir = new THREE.DirectionalLight(0xffffff, 2.2);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 1.3);
     dir.position.set(2, 4, 3);
     dir.castShadow = true;
     this.scene.add(dir);
-    const fill = new THREE.DirectionalLight(0x8899ff, 0.6);
+    const fill = new THREE.DirectionalLight(0x8899ff, 0.5);
     fill.position.set(-3, 1, -2);
     this.scene.add(fill);
+
+    // Spotlight - the highlight that puts the bot "on a pedestal". Position/target/radius
+    // get set relative to the model's actual bounding box once it loads (frameModel);
+    // these are just sane pre-load defaults. decay=1 (not the physically-correct 2) so
+    // intensity stays predictable to tune at this scene's small (~1m) scale.
+    this.spot = new THREE.SpotLight(0xffffff, 45, 0, Math.PI / 7, 0.35, 1);
+    this.spot.position.copy(this.spotHomePos);
+    this.spot.castShadow = true;
+    this.spot.shadow.mapSize.set(1024, 1024);
+    this.spot.shadow.bias = -0.001;
+    this.spot.target.name = "bot-spot-target";
+    this.scene.add(this.spot);
+    this.scene.add(this.spot.target);
 
     const grid = new THREE.GridHelper(3, 30, 0x334155, 0x1e293b);
     grid.name = "bot-grid";
@@ -201,6 +224,21 @@ export class BotViewer {
     }
   }
 
+  setLightOrbit(on: boolean) {
+    this.spotOrbitOn = on;
+    if (!on) this.spot.position.copy(this.spotHomePos);
+  }
+
+  private applyLightOrbit() {
+    if (!this.spotOrbitOn) return;
+    const angle = this.clock.getElapsedTime() * 0.6; // rad/s - slow circle
+    const cx =
+      (this.homeTarget?.x ?? 0) + Math.cos(angle) * this.spotOrbitRadius;
+    const cz =
+      (this.homeTarget?.z ?? 0) + Math.sin(angle) * this.spotOrbitRadius;
+    this.spot.position.set(cx, this.spotOrbitHeight, cz);
+  }
+
   private frameModel(model: THREE.Object3D) {
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
@@ -209,6 +247,19 @@ export class BotViewer {
 
     this.homeTarget = center.clone();
     this.homeDistance = radius * 2.6;
+
+    this.spotOrbitRadius = radius * 2.4;
+    this.spotOrbitHeight = center.y + radius * 2.2;
+    this.spotHomePos = new THREE.Vector3(
+      center.x + this.spotOrbitRadius * 0.7,
+      this.spotOrbitHeight,
+      center.z + this.spotOrbitRadius * 0.7,
+    );
+    this.spot.target.position.copy(center);
+    this.spot.distance = radius * 10;
+    this.spot.shadow.camera.near = Math.max(radius * 0.05, 0.01);
+    this.spot.shadow.camera.far = radius * 12;
+    if (!this.spotOrbitOn) this.spot.position.copy(this.spotHomePos);
 
     const grid = this.scene.getObjectByName("bot-grid") as
       | THREE.GridHelper
@@ -262,6 +313,7 @@ export class BotViewer {
   startLoop() {
     const tick = () => {
       this.applyWave();
+      this.applyLightOrbit();
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
       this.animFrame = requestAnimationFrame(tick);
