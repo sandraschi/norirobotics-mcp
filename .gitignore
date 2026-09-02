@@ -19,6 +19,12 @@ Thumbs.db
 *.bak.*
 target/
 mcpb/src/
+mcpb/requirements.txt
+mcpb/README.md
+mcpb/CHANGELOG.md
+mcpb/LICENSE
+mcpb/pyproject.toml
+mcpb/uv.lock
 *.db
 *.db-journal
 *.sqlite3

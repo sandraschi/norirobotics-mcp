@@ -1,0 +1,30 @@
+# Logic/Dev Bloat
+.venv/
+node_modules/
+__pycache__/
+.ruff_cache/
+.pytest_cache/
+tests/
+web_sota/
+models/
+docs/
+
+# Discovery & Fleet Metadata
+glama.json
+llms.txt
+llms-full.txt
+.git/
+.github/
+.vscode/
+
+# Build Artifacts
+dist/
+build/
+*.mcpb
+
+# Editor / tooling backups
+*.bak
+*.bak.*
+*.orig
+*.rej
+*.pyc

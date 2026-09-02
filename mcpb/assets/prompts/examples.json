@@ -1,0 +1,1027 @@
+[
+  {
+    "name": "info-overview",
+    "description": "Get the default overview",
+    "prompt": "What is the Nori A3?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "info"
+    }
+  },
+  {
+    "name": "info-overview-alt",
+    "description": "Get overview via explicit prompt",
+    "prompt": "Give me a quick summary of this robot.",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "info"
+    }
+  },
+  {
+    "name": "info-specs",
+    "description": "Full spec sheet",
+    "prompt": "What are the full specs of the Nori A3?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "specs"
+    }
+  },
+  {
+    "name": "info-specs-dof",
+    "description": "Spec sheet, DOF focus",
+    "prompt": "How many degrees of freedom does it have and what's the weight?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "specs"
+    }
+  },
+  {
+    "name": "info-sdk-links",
+    "description": "SDK repo/license info",
+    "prompt": "Where's the source code for the SDK this wraps, and what license is it under?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "sdk_links"
+    }
+  },
+  {
+    "name": "info-sdk-links-protocol",
+    "description": "SDK protocol details",
+    "prompt": "What protocol does the SDK use to talk to the robot?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "sdk_links"
+    }
+  },
+  {
+    "name": "info-predecessor",
+    "description": "XLeRobot lineage",
+    "prompt": "What robot did the A3 evolve from?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "predecessor"
+    }
+  },
+  {
+    "name": "info-predecessor-carryover",
+    "description": "What carried forward from predecessor",
+    "prompt": "What design elements carried over from XLeRobot into the A3?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "predecessor"
+    }
+  },
+  {
+    "name": "info-community",
+    "description": "HN launch reception",
+    "prompt": "What did Hacker News think when this launched?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "community"
+    }
+  },
+  {
+    "name": "info-community-criticism",
+    "description": "Community criticism specifically",
+    "prompt": "What criticisms did people have about the A3 at launch?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "community"
+    }
+  },
+  {
+    "name": "info-actuator-upgrade",
+    "description": "Actuator upgrade discussion",
+    "prompt": "Could the actuators be upgraded to something better?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "actuator_upgrade"
+    }
+  },
+  {
+    "name": "info-actuator-upgrade-qdd",
+    "description": "QDD actuator tradeoff",
+    "prompt": "What's the tradeoff between RC servos and quasi-direct-drive actuators here?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "actuator_upgrade"
+    }
+  },
+  {
+    "name": "info-fleet-peers",
+    "description": "Related fleet MCPs",
+    "prompt": "What other MCP servers work alongside this one?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "fleet_peers"
+    }
+  },
+  {
+    "name": "info-fleet-peers-training",
+    "description": "Fleet peer for training",
+    "prompt": "If I record demonstrations here, what would I use to train a model on them?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "fleet_peers"
+    }
+  },
+  {
+    "name": "session-connect",
+    "description": "Open a session",
+    "prompt": "Connect to the robot.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "connect"
+    }
+  },
+  {
+    "name": "session-connect-force-mock",
+    "description": "Force mock session",
+    "prompt": "Open a session but force the mock even if real credentials exist.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "connect",
+      "force_mock": true
+    }
+  },
+  {
+    "name": "session-connect-idempotent",
+    "description": "Reconnect safely",
+    "prompt": "Make sure a session is open before we continue.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "connect"
+    }
+  },
+  {
+    "name": "session-disconnect",
+    "description": "Close a session",
+    "prompt": "Disconnect the current session.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "disconnect"
+    }
+  },
+  {
+    "name": "session-status",
+    "description": "Check status",
+    "prompt": "What's the current session status?",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "status"
+    }
+  },
+  {
+    "name": "session-status-mock-check",
+    "description": "Confirm mock vs real",
+    "prompt": "Is this the real robot or the mock right now?",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "status"
+    }
+  },
+  {
+    "name": "session-status-telemetry",
+    "description": "Telemetry check",
+    "prompt": "Check the current telemetry.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "status"
+    }
+  },
+  {
+    "name": "session-wait-ready",
+    "description": "Block until ready",
+    "prompt": "Wait until the robot is fully ready.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "wait_ready"
+    }
+  },
+  {
+    "name": "session-wait-ready-before-control",
+    "description": "Ready before motion",
+    "prompt": "Make sure it's ready before we send any motion commands.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "wait_ready"
+    }
+  },
+  {
+    "name": "control-jog",
+    "description": "One-shot jog",
+    "prompt": "Jog the left arm gently for half a second.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "jog",
+      "payload": {
+        "arm": "left",
+        "direction": "forward"
+      },
+      "duration": 0.5
+    }
+  },
+  {
+    "name": "control-jog-base",
+    "description": "Jog the base",
+    "prompt": "Nudge the base forward briefly.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "jog",
+      "payload": {
+        "target": "base",
+        "direction": "forward"
+      },
+      "duration": 1.0
+    }
+  },
+  {
+    "name": "control-set-jog",
+    "description": "Start continuous jog",
+    "prompt": "Start moving the base forward slowly and keep going until I say stop.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "set_jog",
+      "payload": {
+        "target": "base",
+        "direction": "forward",
+        "speed": "slow"
+      }
+    }
+  },
+  {
+    "name": "control-clear-jog",
+    "description": "Stop continuous jog",
+    "prompt": "Stop the continuous jog now.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "clear_jog"
+    }
+  },
+  {
+    "name": "control-action",
+    "description": "Send joint targets",
+    "prompt": "Set these joint targets and wait until reached.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "action",
+      "targets": {
+        "joint_1": 0.2,
+        "joint_2": -0.1
+      },
+      "wait": true
+    }
+  },
+  {
+    "name": "control-action-nowait",
+    "description": "Send joint targets, don't wait",
+    "prompt": "Set these joint targets without waiting for completion.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "action",
+      "targets": {
+        "gripper_left": 0.0
+      },
+      "wait": false
+    }
+  },
+  {
+    "name": "control-pose-right",
+    "description": "Cartesian pose, right arm",
+    "prompt": "Move the right arm to 30cm forward, 10cm right, 20cm up, and wait until it arrives.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "pose",
+      "side": "right",
+      "position_m": [
+        0.3,
+        0.1,
+        0.2
+      ],
+      "wait": true
+    }
+  },
+  {
+    "name": "control-pose-left",
+    "description": "Cartesian pose, left arm",
+    "prompt": "Move the left arm to a specific point and confirm when it arrives.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "pose",
+      "side": "left",
+      "position_m": [
+        0.1,
+        -0.05,
+        0.25
+      ],
+      "wait": true
+    }
+  },
+  {
+    "name": "control-pose-orientation",
+    "description": "Cartesian pose with orientation",
+    "prompt": "Move the right gripper to this position with this orientation.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "pose",
+      "side": "right",
+      "position_m": [
+        0.2,
+        0.0,
+        0.3
+      ],
+      "orientation_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "wait": true
+    }
+  },
+  {
+    "name": "control-estop",
+    "description": "Emergency stop",
+    "prompt": "Stop everything right now.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "estop"
+    }
+  },
+  {
+    "name": "control-estop-safety",
+    "description": "E-stop on safety concern",
+    "prompt": "I'm not comfortable with this, stop.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "estop"
+    }
+  },
+  {
+    "name": "control-estop-confirmed",
+    "description": "Confirmed e-stop with timeout",
+    "prompt": "Emergency stop and wait for confirmation, up to 5 seconds.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "estop_confirmed",
+      "timeout": 5.0
+    }
+  },
+  {
+    "name": "control-reset-latch",
+    "description": "Clear e-stop latch",
+    "prompt": "I've confirmed it's safe, clear the e-stop and let it move again.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "reset_latch"
+    }
+  },
+  {
+    "name": "control-reset-arm-left",
+    "description": "Recover left arm from fault",
+    "prompt": "The left arm faulted, recover it without touching the right arm.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "reset_arm",
+      "arm": "left"
+    }
+  },
+  {
+    "name": "control-reset-arm-right",
+    "description": "Recover right arm from fault",
+    "prompt": "Reset the right arm's fault state.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "reset_arm",
+      "arm": "right"
+    }
+  },
+  {
+    "name": "recording-session-start",
+    "description": "Open recording session, no capture yet",
+    "prompt": "Open a recording session but don't start capturing yet.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "session_start"
+    }
+  },
+  {
+    "name": "recording-episode-start",
+    "description": "Start an episode",
+    "prompt": "Start recording a demonstration of pouring water into a cup.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "episode_start",
+      "task": "pour water into cup"
+    }
+  },
+  {
+    "name": "recording-episode-start-stacking",
+    "description": "Start episode, different task",
+    "prompt": "Begin recording me stacking three blocks.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "episode_start",
+      "task": "stack three blocks"
+    }
+  },
+  {
+    "name": "recording-episode-stop",
+    "description": "Stop the current episode",
+    "prompt": "Stop the recording, keep it.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "episode_stop"
+    }
+  },
+  {
+    "name": "recording-episode-discard",
+    "description": "Discard current episode",
+    "prompt": "Discard this episode, I made a mistake mid-recording.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "episode_discard"
+    }
+  },
+  {
+    "name": "recording-session-end",
+    "description": "Close session, keep episodes",
+    "prompt": "Close the recording session and keep everything I've recorded.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "session_end"
+    }
+  },
+  {
+    "name": "recording-session-discard",
+    "description": "Discard entire session",
+    "prompt": "Scrap the whole session, none of it was good.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "session_discard"
+    }
+  },
+  {
+    "name": "recording-start-shortcut",
+    "description": "Simple start shortcut",
+    "prompt": "Just start recording a demonstration of opening a jar.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "start",
+      "task": "open a jar"
+    }
+  },
+  {
+    "name": "recording-stop-shortcut",
+    "description": "Simple stop shortcut",
+    "prompt": "Stop whatever's currently recording.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "stop"
+    }
+  },
+  {
+    "name": "recording-discard-shortcut",
+    "description": "Simple discard shortcut",
+    "prompt": "Discard whatever's currently active.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "discard"
+    }
+  },
+  {
+    "name": "recording-discard-last",
+    "description": "Discard most recent completed episode",
+    "prompt": "Discard the last episode, keep the rest.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "discard_last"
+    }
+  },
+  {
+    "name": "recording-status",
+    "description": "Check recording status",
+    "prompt": "How many episodes do I have recorded so far, and how much disk space is free?",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "status"
+    }
+  },
+  {
+    "name": "recording-snapshot",
+    "description": "Grab a still frame",
+    "prompt": "Grab a camera snapshot.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "snapshot",
+      "role": "front",
+      "track_timeout": 2.0
+    }
+  },
+  {
+    "name": "recording-snapshot-longer-timeout",
+    "description": "Snapshot with longer timeout",
+    "prompt": "Take a still frame, give it up to 10 seconds.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "snapshot",
+      "role": "wrist_left",
+      "track_timeout": 10.0
+    }
+  },
+  {
+    "name": "recording-frames",
+    "description": "Get camera layout",
+    "prompt": "What cameras are available and how are they laid out?",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "frames"
+    }
+  },
+  {
+    "name": "recording-set-bitrate",
+    "description": "Lower video bitrate",
+    "prompt": "Turn the video bitrate down to 500kbps, I'm on a slow connection.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "set_bitrate",
+      "kbps": 500
+    }
+  },
+  {
+    "name": "recording-set-bitrate-high",
+    "description": "Raise video bitrate",
+    "prompt": "Bump the bitrate up to 2000kbps.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "set_bitrate",
+      "kbps": 2000
+    }
+  },
+  {
+    "name": "recording-set-paused-true",
+    "description": "Pause live stream",
+    "prompt": "Pause the live video stream, I'm stepping away for a minute.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "set_paused",
+      "paused": true
+    }
+  },
+  {
+    "name": "recording-set-paused-false",
+    "description": "Resume live stream",
+    "prompt": "I'm back, resume the video stream.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "set_paused",
+      "paused": false
+    }
+  },
+  {
+    "name": "help-basic",
+    "description": "Get quick tool reference",
+    "prompt": "Remind me what tools are available and the order I'd normally use them in.",
+    "tool": "nori_help",
+    "arguments": {}
+  },
+  {
+    "name": "help-lost",
+    "description": "Reorient mid-conversation",
+    "prompt": "I've lost track, what can I even do with this thing?",
+    "tool": "nori_help",
+    "arguments": {}
+  },
+  {
+    "name": "shutdown-basic",
+    "description": "Clean shutdown",
+    "prompt": "We're done for now, close the session cleanly.",
+    "tool": "nori_shutdown",
+    "arguments": {}
+  },
+  {
+    "name": "shutdown-end-of-day",
+    "description": "End of session shutdown",
+    "prompt": "Shut down the session, I'm done for the day.",
+    "tool": "nori_shutdown",
+    "arguments": {}
+  },
+  {
+    "name": "info-price",
+    "description": "Ask about price directly",
+    "prompt": "How much does the Nori A3 cost?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "info"
+    }
+  },
+  {
+    "name": "info-ship-date",
+    "description": "Ask about ship date",
+    "prompt": "When does this robot actually ship?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "info"
+    }
+  },
+  {
+    "name": "session-status-daemon",
+    "description": "Check daemon status specifically",
+    "prompt": "Is the control daemon actually running?",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "status"
+    }
+  },
+  {
+    "name": "session-status-camera-layout",
+    "description": "Check camera layout via status",
+    "prompt": "What cameras does it report right now?",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "status"
+    }
+  },
+  {
+    "name": "control-jog-duration-short",
+    "description": "Very short jog test",
+    "prompt": "Just barely nudge the arm, quarter second.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "jog",
+      "payload": {
+        "arm": "right",
+        "direction": "up"
+      },
+      "duration": 0.25
+    }
+  },
+  {
+    "name": "control-pose-precise",
+    "description": "Precise Cartesian target",
+    "prompt": "Put the left gripper exactly at x=0.15 y=0.0 z=0.4.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "pose",
+      "side": "left",
+      "position_m": [
+        0.15,
+        0.0,
+        0.4
+      ],
+      "wait": true
+    }
+  },
+  {
+    "name": "control-set-jog-then-clear",
+    "description": "Set then immediately plan to clear",
+    "prompt": "Start a continuous forward jog on the base, I'll tell you when to stop.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "set_jog",
+      "payload": {
+        "target": "base",
+        "direction": "forward"
+      }
+    }
+  },
+  {
+    "name": "recording-episode-start-generic",
+    "description": "Start episode with generic task label",
+    "prompt": "Start recording, task label 'general manipulation test'.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "episode_start",
+      "task": "general manipulation test"
+    }
+  },
+  {
+    "name": "recording-status-mid-session",
+    "description": "Status check mid-session",
+    "prompt": "How's the recording session looking so far?",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "status"
+    }
+  },
+  {
+    "name": "session-connect-real-attempt",
+    "description": "Attempt connect (real if configured)",
+    "prompt": "Try to connect - use the real robot if it's configured, otherwise mock is fine.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "connect"
+    }
+  },
+  {
+    "name": "info-fleet-peers-vr",
+    "description": "Fleet peer for VR teleop",
+    "prompt": "Is there a way to drive this with a VR headset instead of typing commands?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "fleet_peers"
+    }
+  },
+  {
+    "name": "control-reset-latch-explicit-confirm",
+    "description": "Reset latch with explicit safety confirmation",
+    "prompt": "I've checked the room, it's clear, please clear the e-stop.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "reset_latch"
+    }
+  },
+  {
+    "name": "recording-session-start-then-pause-decision",
+    "description": "Open session, decide later",
+    "prompt": "Open a recording session, I need a minute before I start the actual take.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "session_start"
+    }
+  },
+  {
+    "name": "recording-discard-mistake-episode",
+    "description": "Discard mid-episode after error",
+    "prompt": "That take went wrong, discard it, don't keep any of it.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "episode_discard"
+    }
+  },
+  {
+    "name": "control-action-gripper-close",
+    "description": "Close gripper via action",
+    "prompt": "Close the right gripper.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "action",
+      "targets": {
+        "gripper_right": 1.0
+      },
+      "wait": true
+    }
+  },
+  {
+    "name": "control-action-gripper-open",
+    "description": "Open gripper via action",
+    "prompt": "Open the left gripper fully.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "action",
+      "targets": {
+        "gripper_left": 0.0
+      },
+      "wait": true
+    }
+  },
+  {
+    "name": "session-wait-ready-timeout-context",
+    "description": "Wait ready after fault recovery",
+    "prompt": "After that arm reset, wait until it's ready again before we continue.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "wait_ready"
+    }
+  },
+  {
+    "name": "info-specs-camera-lidar",
+    "description": "Ask about sensors specifically",
+    "prompt": "What cameras and sensors does the A3 have onboard?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "specs"
+    }
+  },
+  {
+    "name": "recording-set-bitrate-default-question",
+    "description": "Ask then set default-ish bitrate",
+    "prompt": "Set the bitrate to a reasonable default, say 1000kbps.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "set_bitrate",
+      "kbps": 1000
+    }
+  },
+  {
+    "name": "control-estop-then-status",
+    "description": "E-stop followed by status check",
+    "prompt": "Stop it, then tell me the current status.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "estop"
+    }
+  },
+  {
+    "name": "recording-frames-before-snapshot",
+    "description": "Check camera layout before snapshotting",
+    "prompt": "Before grabbing a photo, tell me what cameras are even available.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "frames"
+    }
+  },
+  {
+    "name": "info-sdk-links-dataset-format",
+    "description": "Ask about dataset format specifically",
+    "prompt": "What format do the recorded episodes end up in?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "sdk_links"
+    }
+  },
+  {
+    "name": "session-disconnect-end-of-test",
+    "description": "Disconnect after a quick test",
+    "prompt": "That's all I needed, disconnect.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "disconnect"
+    }
+  },
+  {
+    "name": "control-jog-negative-direction",
+    "description": "Jog in reverse direction",
+    "prompt": "Nudge the base backward slightly.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "jog",
+      "payload": {
+        "target": "base",
+        "direction": "backward"
+      },
+      "duration": 0.5
+    }
+  },
+  {
+    "name": "recording-episode-start-pouring-variant",
+    "description": "Episode start, pouring variant phrasing",
+    "prompt": "Record me demonstrating how to pour coffee.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "episode_start",
+      "task": "pour coffee"
+    }
+  },
+  {
+    "name": "recording-session-end-summary",
+    "description": "End session and ask for summary",
+    "prompt": "Wrap up the session and tell me how many episodes I ended up with.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "session_end"
+    }
+  },
+  {
+    "name": "control-pose-both-arms-sequential-first",
+    "description": "First of a two-arm sequential pose move",
+    "prompt": "Move the left arm into position first.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "pose",
+      "side": "left",
+      "position_m": [
+        0.1,
+        0.1,
+        0.3
+      ],
+      "wait": true
+    }
+  },
+  {
+    "name": "control-pose-both-arms-sequential-second",
+    "description": "Second of a two-arm sequential pose move",
+    "prompt": "Now move the right arm into position too.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "pose",
+      "side": "right",
+      "position_m": [
+        -0.1,
+        0.1,
+        0.3
+      ],
+      "wait": true
+    }
+  },
+  {
+    "name": "info-community-price-comparison",
+    "description": "Ask about price vs competitors reaction",
+    "prompt": "Did people compare the price to other research robots?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "community"
+    }
+  },
+  {
+    "name": "session-status-pre-recording-check",
+    "description": "Status check before starting to record",
+    "prompt": "Before we record anything, confirm the session's healthy.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "status"
+    }
+  },
+  {
+    "name": "recording-set-paused-during-break",
+    "description": "Pause during a break, explicit reason",
+    "prompt": "Pause streaming, I need a coffee break.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "set_paused",
+      "paused": true
+    }
+  },
+  {
+    "name": "help-typical-order",
+    "description": "Ask for typical call order specifically",
+    "prompt": "What's the usual order I'd call these tools in?",
+    "tool": "nori_help",
+    "arguments": {}
+  },
+  {
+    "name": "shutdown-after-estop",
+    "description": "Shutdown after an e-stop resolved",
+    "prompt": "Everything's stopped and safe, go ahead and shut the session down.",
+    "tool": "nori_shutdown",
+    "arguments": {}
+  },
+  {
+    "name": "info-actuator-upgrade-bom-honesty",
+    "description": "Actuator upgrade, ask for parts list explicitly",
+    "prompt": "Give me a full bill of materials for the actuator upgrade.",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "actuator_upgrade"
+    }
+  },
+  {
+    "name": "control-jog-arm-up",
+    "description": "Jog arm upward briefly",
+    "prompt": "Nudge the right arm upward just a little.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "jog",
+      "payload": {
+        "arm": "right",
+        "direction": "up"
+      },
+      "duration": 0.4
+    }
+  },
+  {
+    "name": "recording-episode-stop-then-status",
+    "description": "Stop episode then immediately check status",
+    "prompt": "Stop this episode and tell me how many I have total now.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "episode_stop"
+    }
+  },
+  {
+    "name": "session-connect-then-info",
+    "description": "Connect then ask about specs",
+    "prompt": "Connect first, then tell me the full specs.",
+    "tool": "nori_session",
+    "arguments": {
+      "operation": "connect"
+    }
+  },
+  {
+    "name": "control-reset-arm-after-pose-fault",
+    "description": "Reset arm after a failed pose move",
+    "prompt": "That pose move faulted the arm, reset it.",
+    "tool": "nori_control",
+    "arguments": {
+      "operation": "reset_arm",
+      "arm": "right"
+    }
+  },
+  {
+    "name": "recording-snapshot-wrist-camera",
+    "description": "Snapshot from a specific camera role",
+    "prompt": "Grab a still from the right wrist camera.",
+    "tool": "nori_recording",
+    "arguments": {
+      "operation": "snapshot",
+      "role": "wrist_right",
+      "track_timeout": 3.0
+    }
+  },
+  {
+    "name": "info-community-XLeRobot-comparison",
+    "description": "Community reaction comparing to XLeRobot",
+    "prompt": "Did anyone compare it directly to the original XLeRobot project?",
+    "tool": "nori_info",
+    "arguments": {
+      "operation": "community"
+    }
+  },
+  {
+    "name": "shutdown-mid-troubleshooting",
+    "description": "Shutdown while troubleshooting a stuck session",
+    "prompt": "Something seems stuck, just shut the session down and we'll reconnect fresh.",
+    "tool": "nori_shutdown",
+    "arguments": {}
+  }
+]

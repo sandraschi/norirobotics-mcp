@@ -1,0 +1,28 @@
+{
+  "manifest_version": "0.3",
+  "name": "norirobotics-mcp",
+  "version": "0.1.0",
+  "description": "FastMCP 3.4 server for the Nori Robotics A3 bimanual home robot: WebRTC teleop, LeRobot-format episode recording, safety e-stop, and specs/community reference — mock session by default, real hardware when Supabase credentials are set.",
+  "author": { "name": "Sandra Schipal", "url": "https://github.com/sandraschi" },
+  "repository": { "type": "git", "url": "https://github.com/sandraschi/norirobotics-mcp.git" },
+  "homepage": "https://github.com/sandraschi/norirobotics-mcp",
+  "license": "MIT",
+  "keywords": ["mcp", "model-context-protocol", "fastmcp", "robotics", "nori", "teleop", "lerobot", "webrtc"],
+  "server": {
+    "type": "python",
+    "entry_point": "src/norirobotics_mcp/server.py",
+    "mcp_config": {
+      "command": "python",
+      "args": ["-m", "norirobotics_mcp"],
+      "env": { "PYTHONPATH": "${__dirname}/src", "PYTHONUNBUFFERED": "1" }
+    }
+  },
+  "tools": [
+    { "name": "nori_info", "description": "Static reference data: specs, SDK links, predecessor lineage, community reception, actuator-upgrade notes, fleet peers" },
+    { "name": "nori_session", "description": "Open/close/inspect the WebRTC teleop session (mock or real hardware)" },
+    { "name": "nori_control", "description": "Motion (jog, set_jog, action, pose) and safety (estop, reset_arm, reset_latch) control of a connected robot" },
+    { "name": "nori_recording", "description": "LeRobot-format episode recording lifecycle: session/episode start-stop-discard, snapshot, bitrate/pause" },
+    { "name": "nori_help", "description": "Quick tool reference and typical call order" },
+    { "name": "nori_shutdown", "description": "Close the active session without terminating the MCP server process" }
+  ]
+}

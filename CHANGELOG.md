@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased] — 2026-09-02 (mcpb packaging)
+
+### Added — Claude Desktop MCPB bundle
+- `mcpb/` scaffold per `mcp-central-docs/standards/MCPB_PACKAGING_STANDARDS.md`: `manifest.json`
+  (v0.3, entry point `src/norirobotics_mcp/server.py`, stdio `python -m norirobotics_mcp`),
+  `assets/icon.png`, `assets/prompts/{system.md,user.md,examples.json}` meeting the 3-4-100 rule
+  (3030 / 4002 words, 102 tool-call examples covering all 37 operations across the 6 tools),
+  `.mcpbignore`, `pack.ps1` (fresh-stage copy of `src/` before every pack, `uv export` for
+  `requirements.txt`, `mcpb validate` + `mcpb pack` + `mcpb info`).
+- Built and verified `dist/norirobotics-mcp-v0.1.0.mcpb` (56.8 KB, 24 files): confirmed the
+  packaged `src/norirobotics_mcp/` package directory is not flattened, confirmed the entry point
+  imports cleanly with only `mcpb/src` on `sys.path` (resolves inside that directory, not
+  site-packages), confirmed zero `__pycache__`/`.pyc`/`.bak` pollution in the staged tree, and
+  smoke-launched the packaged stdio entry point.
+- `mcp-central-docs/starts/norirobotics-mcp-start.bat` registered alongside the rest of the
+  fleet's start scripts.
+
 ## [Unreleased] — 2026-09-02 (later same day)
 
 ### Added — real Nori A3 CAD/mesh assets
