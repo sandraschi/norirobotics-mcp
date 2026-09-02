@@ -1,11 +1,29 @@
-"""Export a single, correctly-assembled Nori A3 mesh (GLB + Resonite mesh-JSON) by reading
-MuJoCo's own compiled+posed mesh data - reuses the already-verified expanded URDF instead of
-reimplementing forward kinematics by hand to merge the 20 separately-authored STL parts.
+"""Export the Nori A3 mesh from MuJoCo's own compiled+posed model data - reuses the
+already-verified expanded URDF instead of reimplementing forward kinematics by hand.
 
-Run: uv run --with mujoco --with trimesh python scripts/export_posed_mesh.py
-Outputs:
-  models/nori_description/nori_a3_posed.glb        (Unity import)
-  models/nori_description/nori_a3_posed.mesh.json   (ResoniteLink spawn_mesh vertices/submeshes)
+Two outputs:
+  models/nori_description/nori_a3_posed.glb        flattened, world-posed (Unity import,
+                                                     Resonite mesh-JSON source) - single mesh,
+                                                     not animatable.
+  models/nori_description/nori_a3_rig.glb          per-body node hierarchy at rest pose
+                                                     (qpos0) - same visual result as the
+                                                     flattened GLB, but each MuJoCo body is a
+                                                     separate named glTF node, so a viewer can
+                                                     rotate individual joints (e.g. for a demo
+                                                     animation) instead of only displaying a
+                                                     static blob.
+  models/nori_description/nori_a3_posed.mesh.json   decimated flattened mesh, ResoniteLink
+                                                     spawn_mesh vertices/submeshes schema.
+
+Visual-vs-collision geoms: MuJoCo's URDF importer keeps BOTH a <visual> and a <collision>
+geom per primitive shape (e.g. torso's box, the lift column's boxes). Only the visual copy has
+contype=0/conaffinity=0 - filtering on that (not on geom type) is required, or every collision
+box/cylinder doubles up and the torso/head/lift-column boxes (which have no <mesh> at all, so
+type-only filtering silently dropped them) go missing. Found by comparing the URDF's authored
+link list against what a type==MESH-only filter actually rendered - torso_shell_link,
+head_link, and the three lift_*_link boxes are visual-only primitives.
+
+Run: uv run --with mujoco --with trimesh --with fast-simplification --with scipy python scripts/export_posed_mesh.py
 """
 
 from __future__ import annotations
@@ -16,11 +34,63 @@ from pathlib import Path
 import mujoco
 import numpy as np
 import trimesh
+import trimesh.transformations as tf
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 URDF_PATH = REPO_ROOT / "models" / "nori_description" / "urdf" / "nori.expanded.absolute.urdf"
-GLB_OUT = REPO_ROOT / "models" / "nori_description" / "nori_a3_posed.glb"
+FLAT_GLB_OUT = REPO_ROOT / "models" / "nori_description" / "nori_a3_posed.glb"
+RIG_GLB_OUT = REPO_ROOT / "models" / "nori_description" / "nori_a3_rig.glb"
 MESHJSON_OUT = REPO_ROOT / "models" / "nori_description" / "nori_a3_posed.mesh.json"
+
+
+def is_visual_geom(model: mujoco.MjModel, gid: int) -> bool:
+    """Visual-only copy: MuJoCo's URDF importer gives collision geoms contype=1/conaffinity=1."""
+    return model.geom_contype[gid] == 0 and model.geom_conaffinity[gid] == 0
+
+
+def geom_local_mesh(model: mujoco.MjModel, gid: int) -> trimesh.Trimesh | None:
+    """Build the geom's own shape, centered at its local origin, in its own local frame -
+    caller applies whatever transform (world pose, or body-local pose) is needed."""
+    gtype = model.geom_type[gid]
+    size = model.geom_size[gid]
+
+    if gtype == mujoco.mjtGeom.mjGEOM_MESH:
+        mesh_id = model.geom_dataid[gid]
+        if mesh_id < 0:
+            return None
+        v_start = model.mesh_vertadr[mesh_id]
+        v_count = model.mesh_vertnum[mesh_id]
+        f_start = model.mesh_faceadr[mesh_id]
+        f_count = model.mesh_facenum[mesh_id]
+        verts = model.mesh_vert[v_start : v_start + v_count].copy()
+        faces = model.mesh_face[f_start : f_start + f_count].copy()
+        mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
+    elif gtype == mujoco.mjtGeom.mjGEOM_BOX:
+        mesh = trimesh.creation.box(extents=2 * size)
+    elif gtype == mujoco.mjtGeom.mjGEOM_CYLINDER:
+        mesh = trimesh.creation.cylinder(radius=size[0], height=2 * size[1], sections=24)
+    elif gtype == mujoco.mjtGeom.mjGEOM_SPHERE:
+        mesh = trimesh.creation.icosphere(radius=size[0], subdivisions=2)
+    else:
+        return None
+
+    rgba = (model.geom_rgba[gid] * 255).astype(np.uint8)
+    mesh.visual = trimesh.visual.ColorVisuals(mesh, vertex_colors=np.tile(rgba, (len(mesh.vertices), 1)))
+    return mesh
+
+
+def body_local_matrix(model: mujoco.MjModel, body_id: int) -> np.ndarray:
+    """Body's pose relative to its parent at qpos0 - the rest-pose local transform for the
+    glTF node hierarchy. MuJoCo quaternions are (w, x, y, z), matching trimesh's convention."""
+    mat = tf.quaternion_matrix(model.body_quat[body_id])
+    mat[:3, 3] = model.body_pos[body_id]
+    return mat
+
+
+def geom_local_matrix(model: mujoco.MjModel, gid: int) -> np.ndarray:
+    mat = tf.quaternion_matrix(model.geom_quat[gid])
+    mat[:3, 3] = model.geom_pos[gid]
+    return mat
 
 
 def main() -> None:
@@ -28,47 +98,36 @@ def main() -> None:
     data = mujoco.MjData(model)
     mujoco.mj_forward(model, data)  # resolve every body/geom's world-frame pose at qpos0
 
-    parts: list[trimesh.Trimesh] = []
-    for geom_id in range(model.ngeom):
-        if model.geom_type[geom_id] != mujoco.mjtGeom.mjGEOM_MESH:
-            continue  # skip collision primitives (box/cylinder/sphere) - visual meshes only
-        mesh_id = model.geom_dataid[geom_id]
-        if mesh_id < 0:
+    visual_gids = [gid for gid in range(model.ngeom) if is_visual_geom(model, gid)]
+    print(f"{len(visual_gids)} visual geoms out of {model.ngeom} total (rest are collision copies)")
+
+    # ---- Flattened, world-posed export (Unity / Resonite source) ----
+    world_parts: list[trimesh.Trimesh] = []
+    for gid in visual_gids:
+        m = geom_local_mesh(model, gid)
+        if m is None:
             continue
+        pos = data.geom_xpos[gid]
+        rot = data.geom_xmat[gid].reshape(3, 3)
+        world_mat = np.eye(4)
+        world_mat[:3, :3] = rot
+        world_mat[:3, 3] = pos
+        m.apply_transform(world_mat)
+        world_parts.append(m)
 
-        v_start = model.mesh_vertadr[mesh_id]
-        v_count = model.mesh_vertnum[mesh_id]
-        f_start = model.mesh_faceadr[mesh_id]
-        f_count = model.mesh_facenum[mesh_id]
-        verts_local = model.mesh_vert[v_start : v_start + v_count].copy()
-        faces = model.mesh_face[f_start : f_start + f_count].copy()
-
-        pos = data.geom_xpos[geom_id]
-        rot = data.geom_xmat[geom_id].reshape(3, 3)
-        verts_world = verts_local @ rot.T + pos
-
-        parts.append(trimesh.Trimesh(vertices=verts_world, faces=faces, process=False))
-
-    print(f"Assembled {len(parts)} visual mesh parts from {model.ngeom} total geoms")
-    combined = trimesh.util.concatenate(parts)
+    combined = trimesh.util.concatenate(world_parts)
     combined.remove_unreferenced_vertices()
+    FLAT_GLB_OUT.parent.mkdir(parents=True, exist_ok=True)
+    combined.export(str(FLAT_GLB_OUT))
+    print(f"Wrote {FLAT_GLB_OUT} ({FLAT_GLB_OUT.stat().st_size / 1024:.1f} KB, {len(combined.vertices)} verts, {len(combined.faces)} tris)")
 
-    GLB_OUT.parent.mkdir(parents=True, exist_ok=True)
-    combined.export(str(GLB_OUT))
-    print(f"Wrote {GLB_OUT} ({GLB_OUT.stat().st_size / 1024:.1f} KB, {len(combined.vertices)} verts, {len(combined.faces)} tris)")
-
-    # Decimate for the Resonite path specifically: 135k triangles is fine for a GLB asset but
-    # far too large for a single ResoniteLink spawn_mesh JSON-RPC call (importMeshJSON sends
-    # the whole mesh inline, unlike GLB which is a file import) - target ~8k triangles, still
-    # clearly recognizable as the robot, small enough for a live scripted spawn.
+    # ---- Decimated Resonite mesh-JSON (from the same flattened, correct geometry) ----
     target_tris = 8000
     decimated = combined.copy()
     if len(decimated.faces) > target_tris:
         decimated = decimated.simplify_quadric_decimation(face_count=target_tris)
     print(f"Decimated to {len(decimated.faces)} tris for the Resonite mesh-JSON payload")
 
-    # ResoniteLink spawn_mesh schema (verified against resonite-mcp's real spawn_nekomimi
-    # script): vertices=[{"position":{x,y,z}}, ...], submeshes=[{"$type":"triangles","triangles":[{vertex0Index,vertex1Index,vertex2Index}, ...]}]
     vertices_json = [{"position": {"x": float(v[0]), "y": float(v[1]), "z": float(v[2])}} for v in decimated.vertices]
     triangles_json = [
         {"vertex0Index": int(f[0]), "vertex1Index": int(f[1]), "vertex2Index": int(f[2])} for f in decimated.faces
@@ -76,6 +135,43 @@ def main() -> None:
     mesh_json = {"vertices": vertices_json, "submeshes": [{"$type": "triangles", "triangles": triangles_json}]}
     MESHJSON_OUT.write_text(json.dumps(mesh_json), encoding="utf-8")
     print(f"Wrote {MESHJSON_OUT} ({MESHJSON_OUT.stat().st_size / 1024:.1f} KB)")
+
+    # ---- Per-body rig export (webapp 3D viewer, animatable) ----
+    body_parts: dict[int, list[trimesh.Trimesh]] = {}
+    for gid in visual_gids:
+        m = geom_local_mesh(model, gid)
+        if m is None:
+            continue
+        m.apply_transform(geom_local_matrix(model, gid))
+        body_parts.setdefault(model.geom_bodyid[gid], []).append(m)
+
+    scene = trimesh.Scene()
+    world_parts_local = body_parts.get(0)
+    if world_parts_local:
+        # A handful of visual geoms (root sensor/shell parts) end up attached directly to the
+        # world body - MuJoCo welds a fixed-jointed root URDF link straight into its parent
+        # when it has no joint of its own. Attach them to the scene's actual root frame
+        # ("world", trimesh's default base_frame) instead of silently dropping them.
+        scene.add_geometry(trimesh.util.concatenate(world_parts_local), node_name="world")
+
+    for body_id in range(1, model.nbody):  # body 0 is the world
+        name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, body_id) or f"body_{body_id}"
+        parent_id = int(model.body_parentid[body_id])
+        parent_name = "world" if parent_id == 0 else (mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, parent_id) or f"body_{parent_id}")
+        local_mat = body_local_matrix(model, body_id)
+
+        parts = body_parts.get(body_id)
+        geometry = trimesh.util.concatenate(parts) if parts else None
+        if geometry is not None:
+            scene.add_geometry(geometry, node_name=name, parent_node_name=parent_name, transform=local_mat)
+        else:
+            scene.graph.update(frame_to=name, frame_from=parent_name, matrix=local_mat)
+
+    RIG_GLB_OUT.parent.mkdir(parents=True, exist_ok=True)
+    RIG_GLB_OUT.write_bytes(trimesh.exchange.gltf.export_glb(scene, include_normals=True))
+    body_count = model.nbody - 1
+    mesh_body_count = len(body_parts)
+    print(f"Wrote {RIG_GLB_OUT} ({RIG_GLB_OUT.stat().st_size / 1024:.1f} KB, {body_count} nodes, {mesh_body_count} with geometry)")
 
 
 if __name__ == "__main__":

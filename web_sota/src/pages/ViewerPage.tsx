@@ -1,10 +1,10 @@
-import { Box, RotateCcw } from "lucide-react";
+import { Box, PersonStanding, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { BotViewer } from "@/lib/bot-viewer";
 
-const MODEL_URL = "/api/model/nori_a3.glb";
+const MODEL_URL = "/api/model/nori_a3_rig.glb";
 
 export function ViewerPage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -16,8 +16,10 @@ export function ViewerPage() {
   const [stats, setStats] = useState<{
     vertexCount: number;
     triangleCount: number;
+    jointsFound: number;
   } | null>(null);
   const [wireframe, setWireframe] = useState(false);
+  const [waving, setWaving] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -49,6 +51,12 @@ export function ViewerPage() {
     viewerRef.current?.setWireframe(next);
   };
 
+  const toggleWave = () => {
+    const next = !waving;
+    setWaving(next);
+    viewerRef.current?.setDemoAnimation(next);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -77,6 +85,15 @@ export function ViewerPage() {
               `${stats?.triangleCount.toLocaleString()} tris`}
             {status === "error" && "Failed to load"}
           </span>
+          <Button
+            variant={waving ? "default" : "outline"}
+            size="sm"
+            onClick={toggleWave}
+            disabled={status !== "ready" || !stats?.jointsFound}
+          >
+            <PersonStanding className="h-4 w-4 mr-1" />
+            {waving ? "Stop wave" : "Wave demo"}
+          </Button>
           <Button variant="outline" size="sm" onClick={toggleWireframe}>
             {wireframe ? "Solid" : "Wireframe"}
           </Button>
@@ -103,7 +120,7 @@ export function ViewerPage() {
                 <p className="text-xs text-muted-foreground mt-2">
                   Run <code>scripts/export_posed_mesh.py</code> in the repo to
                   (re)generate{" "}
-                  <code>models/nori_description/nori_a3_posed.glb</code>.
+                  <code>models/nori_description/nori_a3_rig.glb</code>.
                 </p>
               </div>
             </div>
@@ -117,6 +134,11 @@ export function ViewerPage() {
           <li>Left-drag — orbit</li>
           <li>Right-drag — pan</li>
           <li>Scroll / pinch — zoom</li>
+          <li>
+            Wave demo — procedurally rotates the left arm's shoulder, elbow, and
+            wrist joints (real axes/limits from the URDF), not a physically
+            simulated trajectory
+          </li>
         </ul>
       </Card>
     </div>

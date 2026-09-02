@@ -4,6 +4,51 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 // @ts-expect-error - three examples have no bundled types entry
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
+// One node per MuJoCo body in the rigged GLB (see scripts/export_posed_mesh.py). Axes and
+// limits are read directly from the vendored URDF's <joint><axis>/<limit> - not guessed - so
+// rotating a node about its own local axis is exactly the joint it represents.
+interface WaveJoint {
+  nodeName: string;
+  axis: [number, number, number];
+  /** radians, given elapsed seconds since the animation started */
+  angle: (t: number) => number;
+}
+
+const RAISE_S = 0.7; // ramp-up duration for getting the arm into "waving" position
+
+function smooth01(t: number, duration: number): number {
+  const x = Math.min(Math.max(t / duration, 0), 1);
+  return x * x * (3 - 2 * x);
+}
+
+// A recognizable "wave hello" on the left arm: raise it out to the side and up, bend the
+// elbow, then wag the wrist. Left arm chosen arbitrarily; joints/axes/limits from the URDF's
+// left_shoulder_pitch_joint / left_shoulder_roll_joint / left_elbow_pitch_joint /
+// left_wrist_roll_joint.
+const WAVE_JOINTS: WaveJoint[] = [
+  {
+    nodeName: "left_shoulder_pitch_link",
+    axis: [0, 1, 0],
+    angle: (t) => -1.3 * smooth01(t, RAISE_S),
+  },
+  {
+    nodeName: "left_shoulder_roll_link",
+    axis: [1, 0, 0],
+    angle: (t) => 0.5 * smooth01(t, RAISE_S),
+  },
+  {
+    nodeName: "left_elbow_pitch_link",
+    axis: [0, 1, 0],
+    angle: (t) => -1.1 * smooth01(t, RAISE_S),
+  },
+  {
+    nodeName: "left_wrist_roll_link",
+    axis: [-1, 0, 0],
+    angle: (t) =>
+      t < RAISE_S ? 0 : 0.7 * Math.sin((t - RAISE_S) * 2 * Math.PI * 1.1),
+  },
+];
+
 export class BotViewer {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
@@ -15,6 +60,15 @@ export class BotViewer {
   private resizeObserver: ResizeObserver;
   private homeTarget: THREE.Vector3 | null = null;
   private homeDistance: number | null = null;
+  private waveNodes: {
+    joint: WaveJoint;
+    node: THREE.Object3D;
+    restQuat: THREE.Quaternion;
+    axis: THREE.Vector3;
+  }[] = [];
+  private waveStart = 0;
+  private waveOn = false;
+  private clock = new THREE.Clock();
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -59,9 +113,11 @@ export class BotViewer {
     this.resizeObserver.observe(container);
   }
 
-  async loadModel(
-    url: string,
-  ): Promise<{ vertexCount: number; triangleCount: number }> {
+  async loadModel(url: string): Promise<{
+    vertexCount: number;
+    triangleCount: number;
+    jointsFound: number;
+  }> {
     if (this.model) {
       this.scene.remove(this.model);
       this.model = null;
@@ -101,7 +157,48 @@ export class BotViewer {
     this.scene.add(model);
     this.model = model;
     this.frameModel(model);
-    return { vertexCount, triangleCount: Math.round(triangleCount) };
+
+    this.waveNodes = [];
+    for (const joint of WAVE_JOINTS) {
+      const node = model.getObjectByName(joint.nodeName);
+      if (!node) continue;
+      this.waveNodes.push({
+        joint,
+        node,
+        restQuat: node.quaternion.clone(),
+        axis: new THREE.Vector3(...joint.axis).normalize(),
+      });
+    }
+
+    return {
+      vertexCount,
+      triangleCount: Math.round(triangleCount),
+      jointsFound: this.waveNodes.length,
+    };
+  }
+
+  hasWaveJoints(): boolean {
+    return this.waveNodes.length > 0;
+  }
+
+  setDemoAnimation(on: boolean) {
+    this.waveOn = on;
+    if (on) {
+      this.waveStart = this.clock.getElapsedTime();
+    } else {
+      for (const { node, restQuat } of this.waveNodes)
+        node.quaternion.copy(restQuat);
+    }
+  }
+
+  private applyWave() {
+    if (!this.waveOn) return;
+    const t = this.clock.getElapsedTime() - this.waveStart;
+    const q = new THREE.Quaternion();
+    for (const { node, restQuat, axis, joint } of this.waveNodes) {
+      q.setFromAxisAngle(axis, joint.angle(t));
+      node.quaternion.copy(restQuat).multiply(q);
+    }
   }
 
   private frameModel(model: THREE.Object3D) {
@@ -164,6 +261,7 @@ export class BotViewer {
 
   startLoop() {
     const tick = () => {
+      this.applyWave();
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
       this.animFrame = requestAnimationFrame(tick);

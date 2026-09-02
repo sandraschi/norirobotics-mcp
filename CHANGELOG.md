@@ -1,5 +1,38 @@
 # Changelog
 
+## [Unreleased] — 2026-09-02 (missing mesh parts + demo animation)
+
+### Fixed — head/torso/telescopic-lift-column missing from the exported mesh
+- `scripts/export_posed_mesh.py` filtered geoms by `type == mjGEOM_MESH`, on the wrong
+  assumption that primitive shapes were only ever collision approximations. Torso, head, and
+  the three lift-column links are authored in the URDF as hand-built `<box>`/`<cylinder>`
+  **visual** primitives with no mesh at all — the type filter silently dropped all of them
+  (and, separately, dropped 4 sphere "eye" geoms). Root-caused by comparing the URDF's link
+  list against what actually rendered, then confirming via `geom_contype`/`geom_conaffinity`
+  that MuJoCo's URDF importer marks the true visual copy of each primitive with
+  `contype=0, conaffinity=0` (the collision copy gets `contype=1, conaffinity=1`) — the correct
+  filter is visual-vs-collision, not geom type. Also carries real per-geom color
+  (`geom_rgba`, resolved by MuJoCo from the URDF's own named `<material><color rgba=.../>`
+  definitions) into the export as vertex colors — the model was flat grey before.
+- Flattened export grew from 134,656 → 136,220 tris with the fix.
+
+### Added — animatable per-body rig export + webapp "Wave demo"
+- `scripts/export_posed_mesh.py` now also writes `nori_a3_rig.glb`: same corrected geometry,
+  but as one glTF node per MuJoCo body (not a single flattened mesh), parented per
+  `body_parentid` with each node's rest transform taken from `body_pos`/`body_quat` at qpos0.
+  A handful of visual geoms belonging to a root URDF link with no joint of its own get welded
+  by MuJoCo directly onto the world body — attached to the scene's actual root frame instead
+  of silently dropped.
+- New `GET /api/model/nori_a3_rig.glb` backend route; `ViewerPage.tsx` now loads the rig GLB.
+- `bot-viewer.ts`: after load, looks up the left arm's shoulder/elbow/wrist nodes by name and
+  caches each one's rest quaternion. New "Wave demo" toggle procedurally rotates them each
+  frame — real joint axes and MuJoCo quaternion convention (w,x,y,z, matching trimesh), read
+  directly from the URDF's `<joint><axis>` elements, not guessed. This is a client-side
+  procedural animation (smoothstep raise + sinusoidal wrist wag), not a baked/physically
+  simulated trajectory — documented as such in the UI.
+- Browser-verified: wave raises the left arm, bends the elbow, and returns cleanly to rest on
+  stop; zero console errors; tsc/biome/ruff clean.
+
 ## [Unreleased] — 2026-09-02 (3D viewer)
 
 ### Added — webapp 3D Viewer page

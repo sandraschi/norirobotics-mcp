@@ -31,6 +31,7 @@ llm_router = APIRouter(prefix="/api/llm")
 _start_time = time.time()
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _NORI_A3_GLB = _REPO_ROOT / "models" / "nori_description" / "nori_a3_posed.glb"
+_NORI_A3_RIG_GLB = _REPO_ROOT / "models" / "nori_description" / "nori_a3_rig.glb"
 
 
 # ── Ring-buffer activity log ──────────────────────────────────────────
@@ -102,6 +103,13 @@ async def model_nori_a3() -> FileResponse:
     if not _NORI_A3_GLB.is_file():
         raise HTTPException(status_code=404, detail="nori_a3_posed.glb not found — run scripts/export_posed_mesh.py")
     return FileResponse(_NORI_A3_GLB, media_type="model/gltf-binary")
+
+
+@router.get("/model/nori_a3_rig.glb")
+async def model_nori_a3_rig() -> FileResponse:
+    if not _NORI_A3_RIG_GLB.is_file():
+        raise HTTPException(status_code=404, detail="nori_a3_rig.glb not found — run scripts/export_posed_mesh.py")
+    return FileResponse(_NORI_A3_RIG_GLB, media_type="model/gltf-binary")
 
 
 @router.get("/hero")
