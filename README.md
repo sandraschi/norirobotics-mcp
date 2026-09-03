@@ -97,7 +97,8 @@ See [INSTALL.md](INSTALL.md) for the drag-and-drop `.mcpb` path and full options
 |-----|----------|
 | [Installation](INSTALL.md) | All install methods, prerequisites |
 | [Onboarding](docs/ONBOARDING.md) | Mock-vs-real session, Supabase credentials, pre-hardware posture |
-| [Wrapped SDK](docs/WRAPPEE.md) | What Nori A3 / nori-sdk is, lineage, community, disambiguation |
+| [Wrapped SDK](docs/WRAPPEE.md) | What Nori A3 / nori-sdk is, lineage, community, disambiguation, the founder's background, and the founding arXiv paper's actual version history |
+| [The Affordable Home Robot Paradigm](docs/HOME_ROBOT_PARADIGM.md) | Why wheels-not-legs, a telescoping column, tiered end effectors, and split onboard/server compute look like the near-term future of home robotics — Nori A3 as the case study |
 | [Architecture](docs/ARCHITECTURE.md) | Session model, ports, data flow |
 | [Configuration](docs/CONFIGURATION.md) | Env vars, config options |
 | [Tool Reference](docs/TOOLS.md) | All 6 MCP tools |
