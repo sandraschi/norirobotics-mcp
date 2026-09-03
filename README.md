@@ -37,6 +37,43 @@ narrower, agent-oriented view (session status, tool calls, recording state).
 - Fleet-aware: registers with `robotics-mcp`, pairs naturally with `teleoperator-mcp` for VR-driven
   demonstration collection, and feeds `vla-mcp`'s LeRobot training pipeline
 
+## Part of the sandraschi Robotics + VR Fleet
+
+norirobotics-mcp is one member of a larger set of MCP servers under the
+[sandraschi](https://github.com/sandraschi) account that work together rather than in
+isolation — a physical robot integration is far more useful with a virtual-first testing
+path and a shared control hub than as a standalone wrapper. This is deliberately not a solo
+project; it's built to the same portmanteau-tool, live-verified, honest-mock-vs-real
+conventions the whole fleet follows, and it's designed to plug straight into it.
+
+**Robotics fleet peers** (declared in `nori_info(operation="fleet_peers")` / `GET /api/hero`,
+and reciprocally, norirobotics-mcp is registered as a member robot inside `robotics-mcp`
+itself — see that repo's `robotics.nori_a3` config block and `NoriMcpClient` HTTP bridge):
+
+| Repo | Role |
+|------|------|
+| [robotics-mcp](https://github.com/sandraschi/robotics-mcp) | Fleet hub for physical + virtual robots — one unified `robot_control` interface across Dreame vacuums, Yahboom ROSMASTER, Unitree quadrupeds, drones, and Nori A3, plus virtual robot ("vbot") spawning into the VR platforms below. norirobotics-mcp registers here as a member robot, bridged via HTTP rather than reimplemented — see `robot_control(robot_id="nori_a3", action=...)`. |
+| [teleoperator-mcp](https://github.com/sandraschi/teleoperator-mcp) | WebXR teleop gateway (Pico 4 / Quest). Nori A3's own control path is WebRTC remote-teleop — a natural pairing for VR-driven demonstration collection: teleoperate in VR, record the episode through this server. |
+| [vla-mcp](https://github.com/sandraschi/vla-mcp) | Vision-language-action training pipeline. Currently alpha/shelfware fleet-wide — Nori A3's LeRobot-format episode recordings (`nori_recording`) are its first plausible real workload rather than a synthetic one. |
+| [universal-actuator-mcp](https://github.com/sandraschi/universal-actuator-mcp) | Motor/actuator abstraction layer — the eventual home for Feetech-to-QDD actuator-upgrade tooling, a real gap the Hacker News launch thread flagged for the A3's RC-servo arms (see `nori_info(operation="actuator_upgrade")` for the sourced, no-specific-recommendation-yet note). |
+| [bumi-mcp](https://github.com/sandraschi/bumi-mcp) | Closest structural precedent in the fleet: another wheeled consumer robot, specs+OSS-info tools shipped first, physical control gated behind a verified bridge second — the same honest, staged rollout this repo follows. |
+
+**VR crossconnects** (how a Nori A3 gets a virtual twin, via `robotics-mcp`'s
+`robot_virtual`/`vbot_crud` tools — `platform="unity"` etc.):
+
+| Repo | What it adds |
+|------|---------------|
+| [resonite-mcp](https://github.com/sandraschi/resonite-mcp) | Social VR platform control via ResoniteLink (real-protocol WebSocket, not OSC). Ships `resonite_link_spawn_fixture` for gripper/manipulation test fixtures (box/cup/ball/table/chair) and `resonite_link_animate` for spin/bob/real-physics-bounce — a natural staging ground for testing a Nori A3 pick-and-place task in VR before running it on hardware. |
+| [overte-mcp](https://github.com/sandraschi/overte-mcp) | Open-source metaverse platform control, the source these fixture-spawner/animate/model-depot patterns were first built and live-verified against before being ported to the other VR repos. |
+| [unity3d-mcp](https://github.com/sandraschi/unity3d-mcp) | Unity Editor automation via a live TCP bridge — `robotics-mcp`'s primary virtual-robot spawn target, now with the same fixture-spawner/animate capability (built from Unity's own native primitives, not a custom mesh generator). |
+| [godot-mcp](https://github.com/sandraschi/godot-mcp) | Godot 4 engine control via TCP bridge — same fixture-spawner/animate pattern, plus a real model/texture asset depot with backup/restore. |
+| [vrchat-mcp](https://github.com/sandraschi/vrchat-mcp) | VRChat integration - OSC avatar control plus REST (friends, users, notifications, real-time Pipeline events). VRChat's platform doesn't allow live external world-authoring the way the others do, so this one plugs in at the social/telepresence layer rather than the object-spawning one. |
+
+The fixture-spawner/animate/depot capabilities listed above landed across all four world/engine
+platforms in the same session (2026-09), each adapted to that platform's actual architecture —
+same closed-form bounce physics ported four times, verified identical, not four independent
+guesses. See each repo's own `CHANGELOG.md` for the live-verification details.
+
 ## Quick Install
 
 ```bash

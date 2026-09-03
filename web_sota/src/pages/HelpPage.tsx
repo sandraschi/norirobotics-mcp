@@ -33,6 +33,52 @@ const toolsList = [
   },
 ];
 
+const fleetPeers = [
+  {
+    id: "robotics-mcp",
+    note: "Fleet hub for physical + virtual robots. norirobotics-mcp registers here as a member robot, bridged via HTTP rather than reimplemented.",
+  },
+  {
+    id: "teleoperator-mcp",
+    note: "WebXR teleop gateway (Pico 4 / Quest). Nori's own control path is WebRTC remote-teleop — a natural pairing for VR-driven demonstration collection.",
+  },
+  {
+    id: "vla-mcp",
+    note: "Logged as alpha/shelfware fleet-wide. Nori's LeRobot-format recordings are its first plausible real workload.",
+  },
+  {
+    id: "universal-actuator-mcp",
+    note: "Motor/actuator abstraction layer — future home for Feetech-to-QDD actuator-upgrade tooling.",
+  },
+  {
+    id: "bumi-mcp",
+    note: "Closest structural precedent: another wheeled consumer robot, specs+OSS-info tools shipped first, control gated behind a verified bridge second.",
+  },
+];
+
+const vrCrossconnects = [
+  {
+    id: "resonite-mcp",
+    note: "ResoniteLink WebSocket control. Fixture spawner + real-physics-bounce animate — stage a pick-and-place task in VR before running it on hardware.",
+  },
+  {
+    id: "overte-mcp",
+    note: "Open-source metaverse control — where the fixture-spawner/animate/depot pattern was first built and live-verified before porting to the others.",
+  },
+  {
+    id: "unity3d-mcp",
+    note: "Unity Editor automation via a live TCP bridge — robotics-mcp's primary virtual-robot spawn target.",
+  },
+  {
+    id: "godot-mcp",
+    note: "Godot 4 engine control via TCP bridge, plus a real model/texture asset depot with backup/restore.",
+  },
+  {
+    id: "vrchat-mcp",
+    note: "OSC avatar control + REST (friends, notifications, live Pipeline events) — plugs in at the social/telepresence layer, not object-spawning.",
+  },
+];
+
 const faq = [
   {
     q: "When does Nori A3 ship?",
@@ -171,6 +217,46 @@ export function HelpPage() {
               </code>{" "}
               for the full, sourced breakdown.
             </p>
+          </Card>
+
+          <Card>
+            <CardTitle className="text-base mb-1">
+              Part of the sandraschi Robotics + VR Fleet
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mb-3">
+              norirobotics-mcp isn't a standalone wrapper — it registers with{" "}
+              <code className="text-primary">robotics-mcp</code> as a member
+              robot and plugs into a set of VR-platform MCP servers for
+              virtual-first testing before hardware ships.
+            </p>
+            <p className="text-xs font-semibold text-foreground mb-1">
+              Robotics fleet peers
+            </p>
+            <div className="text-sm space-y-1.5 mb-4">
+              {fleetPeers.map((p) => (
+                <div key={p.id}>
+                  <code className="text-primary text-xs">{p.id}</code>
+                  <span className="text-xs text-muted-foreground">
+                    {" "}
+                    — {p.note}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs font-semibold text-foreground mb-1">
+              VR crossconnects (virtual robot twins, via robotics-mcp)
+            </p>
+            <div className="text-sm space-y-1.5">
+              {vrCrossconnects.map((p) => (
+                <div key={p.id}>
+                  <code className="text-primary text-xs">{p.id}</code>
+                  <span className="text-xs text-muted-foreground">
+                    {" "}
+                    — {p.note}
+                  </span>
+                </div>
+              ))}
+            </div>
           </Card>
 
           <Card className="border-red-500/30 bg-red-500/5">
