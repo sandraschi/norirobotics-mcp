@@ -108,17 +108,75 @@ def geom_local_matrix(model: mujoco.MjModel, gid: int) -> np.ndarray:
     return mat
 
 
+# qpos0 (all-zero) is a kinematic reference pose, not a natural resting one - both arms end
+# up fully extended straight out to the sides (documented in nori_feetech.ros2_control.xacro:
+# "the all-zeros arm pose is exactly rank-deficient... the arm is fully extended"). That
+# xacro also gives the real READY pose it uses instead (same values, both arms, mirrored) -
+# use that for a recognizable static render instead of the T-pose.
+READY_POSE = {
+    "shoulder_pitch_joint": 2.35,
+    "shoulder_roll_joint": -0.60,
+    "bicep_yaw_joint": 1.75,
+    "elbow_pitch_joint": 1.20,
+    "forearm_yaw_joint": 1.55,
+    "wrist_pitch_joint": 0.50,
+    "wrist_roll_joint": -0.90,
+}
+
+
+def apply_ready_pose(model: mujoco.MjModel, data: mujoco.MjData) -> None:
+    for side in ("left", "right"):
+        for suffix, angle in READY_POSE.items():
+            joint_name = f"{side}_{suffix}"
+            jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
+            if jid < 0:
+                print(f"WARNING: joint {joint_name!r} not found - skipping ready-pose value")
+                continue
+            data.qpos[model.jnt_qposadr[jid]] = angle
+
+
 def main() -> None:
     model = mujoco.MjModel.from_xml_path(str(URDF_PATH))
     data = mujoco.MjData(model)
-    mujoco.mj_forward(model, data)  # resolve every body/geom's world-frame pose at qpos0
+    apply_ready_pose(model, data)
+    mujoco.mj_forward(model, data)  # resolve every body/geom's world-frame pose at the ready pose
 
     visual_gids = [gid for gid in range(model.ngeom) if is_visual_geom(model, gid)]
     print(f"{len(visual_gids)} visual geoms out of {model.ngeom} total (rest are collision copies)")
 
     # ---- Flattened, world-posed export (Unity / Resonite source) ----
+    # At the ready pose (non-zero joint angles) the right arm's own kinematic solve does NOT
+    # mirror the left arm cleanly - confirmed empirically: even negating every right-side
+    # joint angle only partially corrects it (elbow Z matched, X/wrist still diverged), so
+    # this isn't a simple uniform sign flip and the actual per-joint origin convention
+    # responsible hasn't been fully reverse-engineered. Sidestep it for the static render:
+    # skip the right arm's own geometry entirely and mirror the (correctly-posed) left arm
+    # across the lateral plane instead - guarantees bilateral symmetry regardless of what's
+    # actually going on in the right chain's origins. Does not affect the rig export (real
+    # per-body kinematics, needed as-is for animation) or the Wave demo (left-arm only).
+    RIGHT_ARM_BODIES = {
+        "right_shoulder_pitch_link",
+        "right_shoulder_roll_link",
+        "right_bicep_yaw_link",
+        "right_elbow_pitch_link",
+        "right_forearm_yaw_link",
+        "right_wrist_pitch_link",
+        "right_wrist_roll_link",
+        "right_gripper_link",
+        "right_gripper_idler_link",
+        "right_gripper_camera_mount_link",
+    }
+    LEFT_ARM_BODIES = {name.replace("right_", "left_", 1) for name in RIGHT_ARM_BODIES}
+    # Mirror across Y=0 in raw MuJoCo coordinates (confirmed: shoulder_pitch sits at
+    # y=+0.125 left / y=-0.125 right). A pure reflection has determinant -1 and inverts
+    # face winding/normals, so faces are reversed to compensate.
+    MIRROR_Y = np.diag([1.0, -1.0, 1.0, 1.0])
+
     world_parts: list[trimesh.Trimesh] = []
     for gid in visual_gids:
+        body_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, model.geom_bodyid[gid]) or ""
+        if body_name in RIGHT_ARM_BODIES:
+            continue
         m = geom_local_mesh(model, gid)
         if m is None:
             continue
@@ -129,6 +187,12 @@ def main() -> None:
         world_mat[:3, 3] = pos
         m.apply_transform(world_mat)
         world_parts.append(m)
+
+        if body_name in LEFT_ARM_BODIES:
+            mirrored = m.copy()
+            mirrored.apply_transform(MIRROR_Y)
+            mirrored.faces = mirrored.faces[:, ::-1]
+            world_parts.append(mirrored)
 
     combined = trimesh.util.concatenate(world_parts)
     combined.remove_unreferenced_vertices()
