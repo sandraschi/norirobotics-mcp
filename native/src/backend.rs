@@ -129,8 +129,8 @@ pub fn spawn_backend(app: AppHandle, state: &BackendProcess) -> Result<String, S
     cmd.env("NORI_MCP_TAURI", "1")
         .env("NORI_MCP_HOST", "127.0.0.1")
         .env("NORI_MCP_PORT", BACKEND_PORT.to_string())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
     let mut child = cmd.spawn().map_err(|e| format!("spawn failed: {e}"))?;
