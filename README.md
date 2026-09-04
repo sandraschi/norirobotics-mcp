@@ -10,8 +10,9 @@
 </p>
 
 **MCP server + webapp** for the [Nori Robotics A3](https://www.norirobotics.com/) — a $1,688,
-19-DOF wheeled bimanual home robot. Control it from Claude, watch a live 3D rig viewer of the
-A3 right in the webapp, and spawn its virtual twin into VR.
+19-DOF wheeled bimanual home robot (real and virtual). Control it from Claude, watch a live
+3D rig viewer of the A3 right in the webapp, and spawn its virtual twin into Resonite, Overte,
+Godot, Unity3D.
 
 ## What this wraps
 
