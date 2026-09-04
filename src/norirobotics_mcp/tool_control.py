@@ -16,6 +16,20 @@ from norirobotics_mcp import session_state
 
 logger = logging.getLogger("norirobotics-mcp.control")
 
+
+def _error_response(message: str, exc: Exception | None = None) -> dict[str, Any]:
+    if exc is not None:
+        logger.exception("%s: %s", message, exc)
+    else:
+        logger.error("%s", message)
+    return {
+        "success": False,
+        "message": message,
+        "error": message,
+        "error_type": type(exc).__name__ if exc else "ValueError",
+    }
+
+
 _MOTION_OPS = {"jog", "set_jog", "clear_jog", "action", "pose"}
 _SAFETY_OPS = {"estop", "estop_confirmed", "reset_latch", "reset_arm"}
 
@@ -71,6 +85,7 @@ async def nori_control(
     if robot is None:
         return {
             "success": False,
+            "message": "No active session.",
             "error": "No active session.",
             "suggestions": ["Call nori_session(operation='connect') before nori_control."],
         }
@@ -94,7 +109,7 @@ async def nori_control(
 
         if op == "pose":
             if not side or position_m is None:
-                return {"success": False, "error": "pose requires 'side' and 'position_m' ([x, y, z])."}
+                return _error_response("pose requires 'side' and 'position_m' ([x, y, z]).")
             result = await robot.pose(side, position_m, orientation_xyzw=orientation_xyzw, wait=wait)
             return {"success": True, "message": f"Pose command sent for {side} arm.", "result": _jsonable(result)}
 
@@ -112,17 +127,15 @@ async def nori_control(
 
         if op == "reset_arm":
             if not arm:
-                return {"success": False, "error": "reset_arm requires 'arm' ('left' or 'right')."}
+                return _error_response("reset_arm requires 'arm' ('left' or 'right').")
             result = robot.reset_arm(arm)
             return {"success": True, "message": f"{arm} arm fault state reset.", "result": _jsonable(result)}
 
-        return {
-            "success": False,
-            "error": (f"Unknown operation: {operation}. Motion: {sorted(_MOTION_OPS)}. Safety: {sorted(_SAFETY_OPS)}."),
-        }
+        return _error_response(
+            f"Unknown operation: {operation}. Motion: {sorted(_MOTION_OPS)}. Safety: {sorted(_SAFETY_OPS)}."
+        )
     except Exception as e:
-        logger.exception("nori_control(%s)", op)
-        return {"success": False, "error": str(e), "error_type": type(e).__name__}
+        return _error_response(str(e), exc=e)
 
 
 def _jsonable(value: Any) -> Any:

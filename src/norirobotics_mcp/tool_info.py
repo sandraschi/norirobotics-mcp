@@ -22,6 +22,20 @@ from norirobotics_mcp.knowledge import (
 logger = logging.getLogger("norirobotics-mcp.info")
 
 
+def _error_response(message: str, exc: Exception | None = None) -> dict[str, Any]:
+    """Shared error shape with auto-logging — TOOL_DESIGN_STANDARDS §7.1 Pattern 3."""
+    if exc is not None:
+        logger.exception("%s: %s", message, exc)
+    else:
+        logger.error("%s", message)
+    return {
+        "success": False,
+        "message": message,
+        "error": message,
+        "error_type": type(exc).__name__ if exc else "ValueError",
+    }
+
+
 async def nori_info(
     ctx: Context | None = None,
     operation: str = "info",
@@ -100,13 +114,8 @@ async def nori_info(
                 "peers": FLEET_PEERS,
             }
 
-        return {
-            "success": False,
-            "error": (
-                f"Unknown operation: {operation}. Use: info, specs, sdk_links, predecessor, "
-                "community, actuator_upgrade, fleet_peers."
-            ),
-        }
+        return _error_response(
+            f"Unknown operation: {operation}. Use: info, specs, sdk_links, predecessor, community, actuator_upgrade, fleet_peers."
+        )
     except Exception as e:
-        logger.exception("nori_info(%s)", op)
-        return {"success": False, "error": str(e), "error_type": type(e).__name__}
+        return _error_response(str(e), exc=e)

@@ -24,6 +24,19 @@ from norirobotics_mcp.robot_profiles import VIRTUAL_PROFILE_ID, RobotProfile, pr
 logger = logging.getLogger("norirobotics-mcp.session")
 
 
+def _error_response(message: str, exc: Exception | None = None) -> dict[str, Any]:
+    if exc is not None:
+        logger.exception("%s: %s", message, exc)
+    else:
+        logger.error("%s", message)
+    return {
+        "success": False,
+        "message": message,
+        "error": message,
+        "error_type": type(exc).__name__ if exc else "ValueError",
+    }
+
+
 async def nori_session(
     ctx: Context | None = None,
     operation: Annotated[
@@ -163,6 +176,7 @@ async def nori_session(
             if robot is None:
                 return {
                     "success": False,
+                    "message": "No active session. Call nori_session(operation='connect') first.",
                     "error": "No active session. Call nori_session(operation='connect') first.",
                     "connected": False,
                 }
@@ -187,9 +201,9 @@ async def nori_session(
 
         if op == "add_profile":
             if not name:
-                return {"success": False, "error": "add_profile requires 'name'."}
+                return _error_response("add_profile requires 'name'.")
             if kind not in ("physical", "virtual"):
-                return {"success": False, "error": "add_profile requires kind='physical' or 'virtual'."}
+                return _error_response("add_profile requires kind='physical' or 'virtual'.")
             pid = profile_id or slugify(name)
 
             if kind == "virtual":
@@ -202,10 +216,7 @@ async def nori_session(
                 }
 
             if not (supabase_url and supabase_anon_key and robot_room):
-                return {
-                    "success": False,
-                    "error": "Physical profiles require supabase_url, supabase_anon_key, and robot_room.",
-                }
+                return _error_response("Physical profiles require supabase_url, supabase_anon_key, and robot_room.")
             candidate = RobotProfile(
                 id=pid,
                 name=name,
@@ -218,14 +229,12 @@ async def nori_session(
             )
             test = await _test_physical_connection(candidate)
             if not test["ok"]:
-                return {
-                    "success": False,
-                    "error": f"Could not connect with these credentials: {test['error']}",
-                    "suggestions": [
-                        "Double-check supabase_url/supabase_anon_key/robot_room/user_email/user_password.",
-                        "Confirm the robot is powered on and its Supabase signaling room matches robot_room.",
-                    ],
-                }
+                resp = _error_response(f"Could not connect with these credentials: {test['error']}")
+                resp["suggestions"] = [
+                    "Double-check supabase_url/supabase_anon_key/robot_room/user_email/user_password.",
+                    "Confirm the robot is powered on and its Supabase signaling room matches robot_room.",
+                ]
+                return resp
             profile_store.save(candidate)
             return {
                 "success": True,
@@ -235,10 +244,10 @@ async def nori_session(
 
         if op == "switch_profile":
             if not profile_id:
-                return {"success": False, "error": "switch_profile requires 'profile_id'."}
+                return _error_response("switch_profile requires 'profile_id'.")
             target = profile_store.get(profile_id)
             if target is None:
-                return {"success": False, "error": f"No profile with id '{profile_id}'."}
+                return _error_response(f"No profile with id '{profile_id}'.")
             profile_store.set_active(profile_id)
             return {
                 "success": True,
@@ -248,39 +257,27 @@ async def nori_session(
 
         if op == "remove_profile":
             if not profile_id:
-                return {"success": False, "error": "remove_profile requires 'profile_id'."}
+                return _error_response("remove_profile requires 'profile_id'.")
             if profile_id == VIRTUAL_PROFILE_ID:
-                return {"success": False, "error": "Cannot remove the built-in Virtual Twin profile."}
+                return _error_response("Cannot remove the built-in Virtual Twin profile.")
             if profile_id == profile_store.active_id():
-                return {
-                    "success": False,
-                    "error": "Cannot remove the active profile — switch to another profile first.",
-                }
+                return _error_response("Cannot remove the active profile — switch to another profile first.")
             removed = profile_store.delete(profile_id)
             return {
                 "success": removed,
                 "message": "Profile removed." if removed else f"No profile with id '{profile_id}'.",
             }
 
-        return {
-            "success": False,
-            "error": (
-                f"Unknown operation: {operation}. Use: connect, disconnect, status, wait_ready, "
-                "list_profiles, add_profile, switch_profile, remove_profile."
-            ),
-        }
+        return _error_response(
+            f"Unknown operation: {operation}. Use: connect, disconnect, status, wait_ready, list_profiles, add_profile, switch_profile, remove_profile."
+        )
     except Exception as e:
-        logger.exception("nori_session(%s)", op)
-        return {
-            "success": False,
-            "error": str(e),
-            "error_type": type(e).__name__,
-            "suggestions": [
-                "Run nori_session(operation='connect') before other nori_* tools.",
-                "Run nori_session(operation='list_profiles') to see saved robots, or 'add_profile' "
-                "to register a new physical A3 or Virtual Twin.",
-            ],
-        }
+        resp = _error_response(str(e), exc=e)
+        resp["suggestions"] = [
+            "Run nori_session(operation='connect') before other nori_* tools.",
+            "Run nori_session(operation='list_profiles') to see saved robots, or 'add_profile' to register a new physical A3 or Virtual Twin.",
+        ]
+        return resp
 
 
 async def _test_physical_connection(profile: RobotProfile, *, timeout: float = 15.0) -> dict[str, Any]:

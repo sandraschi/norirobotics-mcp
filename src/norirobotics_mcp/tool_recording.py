@@ -24,6 +24,21 @@ from norirobotics_mcp.robot_profiles import provenance_fields
 
 logger = logging.getLogger("norirobotics-mcp.recording")
 
+
+def _error_response(message: str, exc: Exception | None = None) -> dict[str, Any]:
+    if exc is not None:
+        logger.exception("%s: %s", message, exc)
+    else:
+        logger.error("%s", message)
+    return {
+        "success": False,
+        "message": message,
+        "error": message,
+        "error_type": type(exc).__name__ if exc else "ValueError",
+        **provenance_fields(),
+    }
+
+
 _RECORD_VERBS: set[str] = set(get_args(protocol.RecordVerb))
 
 
@@ -102,6 +117,7 @@ async def nori_recording(
     if robot is None:
         return {
             "success": False,
+            "message": "No active session.",
             "error": "No active session.",
             "suggestions": ["Call nori_session(operation='connect') before nori_recording."],
             **provenance_fields(),
@@ -142,7 +158,7 @@ async def nori_recording(
 
         if op == "set_bitrate":
             if kbps is None:
-                return {"success": False, "error": "set_bitrate requires 'kbps'.", **provenance_fields()}
+                return _error_response("set_bitrate requires 'kbps'.")
             result = robot.set_video_bitrate(kbps)
             return {
                 "success": True,
@@ -153,7 +169,7 @@ async def nori_recording(
 
         if op == "set_paused":
             if paused is None:
-                return {"success": False, "error": "set_paused requires 'paused' (bool).", **provenance_fields()}
+                return _error_response("set_paused requires 'paused' (bool).")
             result = robot.set_video_paused(paused)
             return {
                 "success": True,
@@ -162,17 +178,11 @@ async def nori_recording(
                 **provenance_fields(),
             }
 
-        return {
-            "success": False,
-            "error": (
-                f"Unknown operation: {operation}. Record verbs: {sorted(_RECORD_VERBS)}. "
-                "Video ops: snapshot, frames, set_bitrate, set_paused."
-            ),
-            **provenance_fields(),
-        }
+        return _error_response(
+            f"Unknown operation: {operation}. Record verbs: {sorted(_RECORD_VERBS)}. Video ops: snapshot, frames, set_bitrate, set_paused."
+        )
     except Exception as e:
-        logger.exception("nori_recording(%s)", op)
-        return {"success": False, "error": str(e), "error_type": type(e).__name__, **provenance_fields()}
+        return _error_response(str(e), exc=e)
 
 
 def _jsonable(value: Any) -> Any:
