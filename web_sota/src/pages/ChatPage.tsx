@@ -253,13 +253,12 @@ export function ChatPage() {
               <p className="text-sm mt-2">Try an example prompt below.</p>
             </div>
           ) : (
-            // biome-ignore lint/suspicious/noArrayIndexKey: chat history has no stable id for capped 100
-            messages.map((m, i) => (
+            messages.map((m) => (
               <div
-                key={`${m.role}-${i}`}
+                key={`${m.role}-${m.content.slice(0, 32)}`}
                 className={`rounded-lg px-3 py-2 text-sm ${m.role === "user" ? "bg-primary/10 border border-primary/20" : "bg-muted/40 border border-border"}`}
               >
-                <div className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">
+                <div className="text-sm font-semibold uppercase tracking-wider opacity-60 mb-1">
                   {m.role}
                 </div>
                 <div className="whitespace-pre-wrap break-words">

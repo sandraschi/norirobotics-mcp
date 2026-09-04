@@ -16,9 +16,9 @@ export function InfoPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="info-page">
       <h1 className="text-2xl font-bold">Info</h1>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground" data-testid="info-desc">
         Specs, SDK links, predecessor lineage, and community reaction. Full
         detail lives behind the <code>nori_info(operation=...)</code> MCP tool —
         this page is a quick spec + fleet-map view; ask Claude for{" "}
@@ -28,13 +28,13 @@ export function InfoPage() {
       {err && <div className="text-sm text-red-400">{err}</div>}
       {data && (
         <>
-          <Card>
+          <Card data-testid="info-spec">
             <CardTitle className="mb-2">Spec sheet</CardTitle>
             <pre className="text-xs overflow-x-auto whitespace-pre-wrap text-muted-foreground">
               {JSON.stringify(data.hero, null, 2)}
             </pre>
           </Card>
-          <Card>
+          <Card data-testid="info-peers">
             <CardTitle className="mb-2">Fleet peers</CardTitle>
             <ul className="space-y-2 text-sm">
               {data.fleet_peers.map((p) => (

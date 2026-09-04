@@ -40,11 +40,15 @@ export default function Logging() {
   }, [fetchLogs]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-4" data-testid="logging-page">
+      <div
+        className="flex flex-wrap items-center gap-3"
+        data-testid="logging-controls"
+      >
         <h1 className="text-2xl font-bold mr-2">Logs</h1>
         <select
-          className="h-8 rounded border border-border bg-secondary px-2 text-xs"
+          data-testid="logging-level"
+          className="h-8 rounded border border-border bg-secondary px-2 text-sm"
           value={level}
           onChange={(e) => setLevel(e.target.value)}
         >
@@ -56,17 +60,21 @@ export default function Logging() {
           ))}
         </select>
         <input
-          className="h-8 w-48 rounded border border-border bg-secondary px-2 text-xs"
+          data-testid="logging-search"
+          className="h-8 w-48 rounded border border-border bg-secondary px-2 text-sm"
           placeholder="Search..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <span className="text-xs text-muted-foreground ml-auto">
+        <span
+          className="text-sm text-muted-foreground ml-auto"
+          data-testid="logging-total"
+        >
           {total} entries
         </span>
       </div>
 
-      <div className="h-[60vh] overflow-auto rounded-lg border border-border bg-background/40 p-3 font-mono text-xs leading-relaxed">
+      <div className="h-[60vh] overflow-auto rounded-lg border border-border bg-background/40 p-3 font-mono text-sm leading-relaxed">
         {entries.length === 0 && (
           <div className="text-muted-foreground text-center py-12">
             No log entries yet

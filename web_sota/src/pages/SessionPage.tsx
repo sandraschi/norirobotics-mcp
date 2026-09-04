@@ -142,14 +142,14 @@ export function SessionPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="session-page">
       <h1 className="text-2xl font-bold">Session</h1>
 
-      <Card>
+      <Card data-testid="session-connection">
         <div className="flex items-center justify-between mb-3">
           <CardTitle>Connection</CardTitle>
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${
+            className={`text-sm px-2 py-0.5 rounded-full ${
               status?.connected
                 ? "bg-green-500/10 text-green-400 border border-green-500/30"
                 : "bg-muted text-muted-foreground border border-border"
@@ -188,7 +188,7 @@ export function SessionPage() {
         )}
       </Card>
 
-      <Card>
+      <Card data-testid="session-profiles">
         <div className="flex items-center justify-between mb-3">
           <CardTitle>Robot Profiles</CardTitle>
           <Button
@@ -208,7 +208,7 @@ export function SessionPage() {
             >
               <div className="flex items-center gap-3">
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
+                  className={`text-sm px-2 py-0.5 rounded-full ${
                     p.kind === "physical"
                       ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
                       : "bg-sky-500/10 text-sky-400 border border-sky-500/30"
@@ -219,7 +219,7 @@ export function SessionPage() {
                 <div>
                   <div className="text-sm font-medium">{p.name}</div>
                   {p.kind === "physical" && (
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-sm text-muted-foreground">
                       {p.robot_room}
                     </div>
                   )}
@@ -363,7 +363,7 @@ export function SessionPage() {
       </Card>
 
       {status?.connected && (
-        <Card>
+        <Card data-testid="session-telemetry">
           <CardTitle className="mb-2">Telemetry</CardTitle>
           <pre className="text-xs overflow-x-auto whitespace-pre-wrap text-muted-foreground">
             {JSON.stringify(

@@ -219,7 +219,7 @@ export function AppLayout() {
             </span>
             <span
               className={cn(
-                "text-xs px-2 py-0.5 rounded-full border",
+                "text-sm px-2 py-0.5 rounded-full border",
                 activeRobot?.kind === "physical"
                   ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                   : "bg-sky-500/10 text-sky-400 border-sky-500/30",

@@ -17,22 +17,27 @@ export function ControlPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="control-page">
       <h1 className="text-2xl font-bold">Control</h1>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground" data-testid="control-desc">
         Requires an open session (see the Session page). Full motion surface —
         jog, action, Cartesian pose — is exposed via the{" "}
         <code>nori_control</code> MCP tool; this page ships the one control
         every operator needs at a glance: e-stop.
       </p>
-      <Card>
+      <Card data-testid="control-estop-card">
         <CardTitle className="mb-3">Emergency stop</CardTitle>
-        <Button variant="destructive" onClick={estop} disabled={busy}>
+        <Button
+          variant="destructive"
+          onClick={estop}
+          disabled={busy}
+          data-testid="control-estop"
+        >
           E-STOP
         </Button>
       </Card>
       {result != null && (
-        <Card>
+        <Card data-testid="control-result">
           <CardTitle className="mb-2">Last result</CardTitle>
           <pre className="text-xs overflow-x-auto whitespace-pre-wrap text-muted-foreground">
             {JSON.stringify(result, null, 2)}

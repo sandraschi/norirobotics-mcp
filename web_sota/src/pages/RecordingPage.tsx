@@ -27,28 +27,34 @@ export function RecordingPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="recording-page">
       <h1 className="text-2xl font-bold">Recording</h1>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground" data-testid="recording-desc">
         Requires an open session. <code>episode_start</code>/
         <code>episode_stop</code> map directly onto nori_sdk's own recording
         verbs and persist server-side (Nori's backend) in LeRobot-compatible
         format — the handoff point into <code>vla-mcp</code> / Hugging Face
         LeRobot training pipelines.
       </p>
-      <Card className="space-y-3">
+      <Card className="space-y-3" data-testid="recording-card">
         <CardTitle>Episode</CardTitle>
         <input
+          data-testid="recording-task"
           className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm"
           placeholder="task description (e.g. pour water into cup)"
           value={task}
           onChange={(e) => setTask(e.target.value)}
         />
         <div className="flex gap-2">
-          <Button onClick={start} disabled={busy}>
+          <Button onClick={start} disabled={busy} data-testid="recording-start">
             Start episode
           </Button>
-          <Button variant="outline" onClick={stop} disabled={busy}>
+          <Button
+            variant="outline"
+            onClick={stop}
+            disabled={busy}
+            data-testid="recording-stop"
+          >
             Stop episode
           </Button>
         </div>

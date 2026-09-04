@@ -68,7 +68,7 @@ export function InboxPage() {
                 <span className="text-sm font-mono text-muted-foreground">
                   {e.timestamp.split("T")[1] ?? e.timestamp}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-muted border border-border">
+                <span className="text-sm px-2 py-0.5 rounded-full bg-muted border border-border">
                   {e.level}
                 </span>
               </div>

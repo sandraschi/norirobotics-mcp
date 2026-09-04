@@ -65,8 +65,11 @@ export function ViewerPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="space-y-4" data-testid="viewer-page">
+      <div
+        className="flex items-center justify-between flex-wrap gap-3"
+        data-testid="viewer-header"
+      >
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Box className="h-6 w-6 text-primary" />
@@ -79,7 +82,7 @@ export function ViewerPage() {
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`text-xs px-2 py-0.5 rounded-full border ${
+            className={`text-sm px-2 py-0.5 rounded-full border ${
               status === "ready"
                 ? "bg-green-500/10 text-green-400 border-green-500/30"
                 : status === "error"
@@ -124,16 +127,20 @@ export function ViewerPage() {
         </div>
       </div>
 
-      <Card className="p-0 overflow-hidden">
-        <div ref={containerRef} className="h-[65vh] w-full relative">
+      <Card className="p-0 overflow-hidden" data-testid="viewer-canvas">
+        <div
+          ref={containerRef}
+          className="h-[65vh] w-full relative"
+          data-testid="viewer-container"
+        >
           {status === "error" && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80">
               <div className="text-center max-w-md px-4">
                 <p className="text-sm text-red-400 mb-2">
                   Could not load the model.
                 </p>
-                <p className="text-xs text-muted-foreground">{error}</p>
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="text-sm text-muted-foreground">{error}</p>
+                <p className="text-sm text-muted-foreground mt-2">
                   Run <code>scripts/export_posed_mesh.py</code> in the repo to
                   (re)generate{" "}
                   <code>models/nori_description/nori_a3_rig.glb</code>.

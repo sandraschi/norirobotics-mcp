@@ -102,24 +102,31 @@ export function HelpPage() {
   const [tab, setTab] = useState<Tab>("about");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6" data-testid="help-page">
+      <div
+        className="flex items-center justify-between"
+        data-testid="help-header"
+      >
         <div>
           <h1 className="text-2xl font-bold">Help & Reference</h1>
           <p className="text-muted-foreground text-sm mt-1">
             norirobotics-mcp — MCP control surface for the Nori A3
           </p>
         </div>
-        <span className="text-xs text-amber-400 font-semibold border border-amber-500/30 px-3 py-1 rounded-full bg-amber-500/10">
+        <span className="text-sm text-amber-400 font-semibold border border-amber-500/30 px-3 py-1 rounded-full bg-amber-500/10">
           Ships Fall 2026
         </span>
       </div>
 
-      <div className="flex gap-1 bg-muted/30 p-1 rounded-xl border border-border w-fit">
+      <div
+        className="flex gap-1 bg-muted/30 p-1 rounded-xl border border-border w-fit"
+        data-testid="help-tabs"
+      >
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
+            data-testid={`help-tab-${t.id}`}
             onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.id
@@ -229,28 +236,28 @@ export function HelpPage() {
               robot and plugs into a set of VR-platform MCP servers for
               virtual-first testing before hardware ships.
             </p>
-            <p className="text-xs font-semibold text-foreground mb-1">
+            <p className="text-sm font-semibold text-foreground mb-1">
               Robotics fleet peers
             </p>
             <div className="text-sm space-y-1.5 mb-4">
               {fleetPeers.map((p) => (
                 <div key={p.id}>
-                  <code className="text-primary text-xs">{p.id}</code>
-                  <span className="text-xs text-muted-foreground">
+                  <code className="text-primary text-sm">{p.id}</code>
+                  <span className="text-sm text-muted-foreground">
                     {" "}
                     — {p.note}
                   </span>
                 </div>
               ))}
             </div>
-            <p className="text-xs font-semibold text-foreground mb-1">
+            <p className="text-sm font-semibold text-foreground mb-1">
               VR crossconnects (virtual robot twins, via robotics-mcp)
             </p>
             <div className="text-sm space-y-1.5">
               {vrCrossconnects.map((p) => (
                 <div key={p.id}>
-                  <code className="text-primary text-xs">{p.id}</code>
-                  <span className="text-xs text-muted-foreground">
+                  <code className="text-primary text-sm">{p.id}</code>
+                  <span className="text-sm text-muted-foreground">
                     {" "}
                     — {p.note}
                   </span>
@@ -324,9 +331,9 @@ export function HelpPage() {
                   key={t.name}
                   className="grid grid-cols-[1fr_2fr_2fr] gap-2 text-muted-foreground"
                 >
-                  <code className="text-primary text-xs">{t.name}</code>
-                  <code className="text-xs">{t.op}</code>
-                  <span className="text-xs">{t.desc}</span>
+                  <code className="text-primary text-sm">{t.name}</code>
+                  <code className="text-sm">{t.op}</code>
+                  <span className="text-sm">{t.desc}</span>
                 </div>
               ))}
             </div>
@@ -347,8 +354,8 @@ export function HelpPage() {
                   key={path}
                   className="grid grid-cols-[2fr_3fr] gap-2 text-muted-foreground"
                 >
-                  <code className="text-xs text-primary">{path}</code>
-                  <span className="text-xs">{desc}</span>
+                  <code className="text-sm text-primary">{path}</code>
+                  <span className="text-sm">{desc}</span>
                 </div>
               ))}
             </div>

@@ -92,8 +92,11 @@ export function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="space-y-6" data-testid="dashboard">
+      <div
+        className="flex items-start justify-between"
+        data-testid="dashboard-hero"
+      >
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Nori A3</h1>
           <p className="text-muted-foreground text-base mt-1 max-w-2xl">
@@ -105,7 +108,7 @@ export function Dashboard() {
             Session tools default to nori_sdk's own mock robot.
           </p>
         </div>
-        <div className="text-right text-xs text-muted-foreground">
+        <div className="text-right text-sm text-muted-foreground">
           <div>{hero?.vendor ?? "—"}</div>
           <div className="mt-1">
             <span
@@ -132,7 +135,7 @@ export function Dashboard() {
 
       <RobotOnboarding />
 
-      <div>
+      <div data-testid="dashboard-specs">
         <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
           <Cpu size={20} className="text-primary" /> Specifications
         </h2>
@@ -142,7 +145,7 @@ export function Dashboard() {
               <div className="flex items-center gap-3">
                 <st.icon className="h-5 w-5 text-primary shrink-0" />
                 <div className="min-w-0">
-                  <CardTitle className="text-xs text-muted-foreground font-normal uppercase tracking-wider">
+                  <CardTitle className="text-sm text-muted-foreground font-normal uppercase tracking-wider">
                     {st.label}
                   </CardTitle>
                   <p className="text-xl font-semibold mt-0.5">{st.value}</p>
