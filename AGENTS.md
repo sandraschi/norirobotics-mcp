@@ -14,7 +14,7 @@ ships Fall 2026) — every session-gated tool defaults to nori_sdk's own `mock_s
 ## Standards
 - FastMCP 3.4+ portmanteau tool pattern — tools use `operation` enum param
 - Responses: structured dicts with `success`, `message`, domain-specific fields
-- See [mcp-central-docs](https://github.com/sandraschi/mcp-central-docs) for fleet-wide coding standards
+- See [mcp-central-docs](https://github.com/sandraschi/mcp-central-docs) (aka "mcd") for fleet-wide coding standards
 
 ## Key Files
 - `README.md` — full documentation

@@ -1,9 +1,17 @@
-[![FastMCP Version](https://img.shields.io/badge/FastMCP-3.4-blue?style=flat-square&logo=python&logoColor=white)](https://github.com/sandraschi/fastmcp) [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![Built with Just](https://img.shields.io/badge/Built_with-Just-000000?style=flat-square&logo=gnu-bash&logoColor=white)](https://github.com/casey/just)
-
 # norirobotics-mcp
 
-Control the [Nori Robotics A3](https://www.norirobotics.com/) — a $1,688, 19-DOF wheeled
-bimanual home robot — from Claude, with a webapp dashboard for status and teleop.
+<p align="center">
+  <a href="https://github.com/casey/just"><img src="https://img.shields.io/badge/just-ready_to_go-7c5cfc?style=flat-square&logo=just&logoColor=white" alt="Just"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"></a>
+  <a href="https://github.com/PrefectHQ/fastmcp"><img src="https://img.shields.io/badge/FastMCP-3.4-7c5cfc?style=flat-square" alt="FastMCP"></a>
+  <img src="https://img.shields.io/badge/3D_Viewer-Three.js-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js 3D viewer">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT"></a>
+</p>
+
+**MCP server + webapp** for the [Nori Robotics A3](https://www.norirobotics.com/) — a $1,688,
+19-DOF wheeled bimanual home robot. Control it from Claude, watch a live 3D rig viewer of the
+A3 right in the webapp, and spawn its virtual twin into VR.
 
 ## What this wraps
 
@@ -34,6 +42,9 @@ narrower, agent-oriented view (session status, tool calls, recording state).
 - Open/close/inspect a live control session, real or mock (`nori_session`)
 - Jog, move-to-target, Cartesian pose control, e-stop and fault reset (`nori_control`)
 - Start/stop episode recording in LeRobot-compatible format, video snapshot/bitrate control (`nori_recording`)
+- **Live 3D viewer of the A3** right in the webapp — the correctly-posed rig, rendered from a
+  real glTF/GLB export (73,974 verts / 134,656 tris), with wireframe toggle, a wave-demo
+  animation, and orbit lighting (`web_sota/src/pages/ViewerPage.tsx`, Three.js-based `BotViewer`)
 - Fleet-aware: registers with `robotics-mcp`, pairs naturally with `teleoperator-mcp` for VR-driven
   demonstration collection, and feeds `vla-mcp`'s LeRobot training pipeline
 
@@ -73,6 +84,17 @@ The fixture-spawner/animate/depot capabilities listed above landed across all fo
 platforms in the same session (2026-09), each adapted to that platform's actual architecture —
 same closed-form bounce physics ported four times, verified identical, not four independent
 guesses. See each repo's own `CHANGELOG.md` for the live-verification details.
+
+### How the A3 actually gets spawned into VR
+
+This isn't a generic placeholder box standing in for the robot — it's the real A3 mesh.
+`scripts/export_posed_mesh.py` takes the same posed rig the webapp's 3D viewer renders and
+decimates it down to a 26,467-triangle mesh-JSON, sized to fit inline over a WebSocket frame.
+`robotics-mcp`'s `robot_virtual`/`vbot_crud` tools pick that mesh up for `robot_type="nori_a3"`
+and push it live into a running Resonite session through **ResoniteLink's `spawn_mesh`** call —
+a real protocol message, not an OSC hack or a stand-in primitive. The result: open Resonite,
+call the spawn tool, and the actual A3 geometry appears in-world — a virtual twin you can pose,
+inspect, or stage a pick-and-place task against before ever touching the real hardware.
 
 ## Quick Install
 
