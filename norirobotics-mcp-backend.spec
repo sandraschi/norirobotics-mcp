@@ -4,11 +4,14 @@ if site_pkgs not in sys.path:
     sys.path.insert(0, site_pkgs)
 # -*- mode: python ; coding: utf-8 -*-
 # Tauri sidecar — HTTP backend on port 11970 (Nori A3 control + session/recording tools).
-from PyInstaller.utils.hooks import collect_all, copy_metadata
+from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metadata
 
 datas = [("src/norirobotics_mcp", "norirobotics_mcp")]
-for pkg in ("fastmcp", "fastapi", "uvicorn", "pydantic", "starlette", "httpx", "websockets"):
-    datas += copy_metadata(pkg)
+for pkg in ("fastmcp", "fastapi", "uvicorn", "pydantic", "starlette", "httpx", "websockets", "mcp", "opentelemetry-api"):
+    try:
+        datas += copy_metadata(pkg)
+    except Exception:
+        pass
 
 binaries = []
 hiddenimports = [
@@ -33,8 +36,45 @@ hiddenimports = [
     "norirobotics_mcp.tool_session",
     "norirobotics_mcp.tools_manifest",
     "norirobotics_mcp.knowledge",
+    "norirobotics_mcp.robot_profiles",
     "_strptime",
+    "_datetime",
+    "cachetools",
+    "key_value",
+    "mcp.types",
+    "joserfc",
+    "joserfc.jwk",
+    "joserfc.jwt",
+    "pydantic.networks",
+    "pydantic.color",
+    "pydantic.deprecated",
+    "beartype",
+    "sqlite3",
 ]
+
+# Collect all pydantic submodules (lazy imports)
+try:
+    _pydantic_all = collect_submodules('pydantic')
+    hiddenimports += _pydantic_all
+except Exception:
+    pass
+
+# FastMCP 3.4+ needs cachetools/key_value
+try:
+    _cache_datas, _cache_binaries, _cache_hidden = collect_all("cachetools")
+    datas += _cache_datas
+    binaries += _cache_binaries
+    hiddenimports += _cache_hidden
+except Exception:
+    pass
+
+try:
+    _kv_datas, _kv_binaries, _kv_hidden = collect_all("key_value")
+    datas += _kv_datas
+    binaries += _kv_binaries
+    hiddenimports += _kv_hidden
+except Exception:
+    pass
 
 # nori-sdk[all] pulls in aiortc (WebRTC) + av (PyAV/FFmpeg). Both are historically
 # difficult for PyInstaller to freeze correctly: PyAV bundles compiled shared
@@ -43,11 +83,20 @@ hiddenimports = [
 # datas/binaries/hiddenimports so PyInstaller doesn't silently drop them.
 # UNVERIFIED until a real PyInstaller freeze + smoke test is run — see build.ps1
 # Step 2's frozen-binary smoke test, which is the actual gate for this.
-av_datas, av_binaries, av_hidden = collect_all("av")
-aiortc_datas, aiortc_binaries, aiortc_hidden = collect_all("aiortc")
-datas += av_datas + aiortc_datas
-binaries += av_binaries + aiortc_binaries
-hiddenimports += av_hidden + aiortc_hidden
+try:
+    av_datas, av_binaries, av_hidden = collect_all("av")
+    datas += av_datas
+    binaries += av_binaries
+    hiddenimports += av_hidden
+except Exception:
+    pass
+try:
+    aiortc_datas, aiortc_binaries, aiortc_hidden = collect_all("aiortc")
+    datas += aiortc_datas
+    binaries += aiortc_binaries
+    hiddenimports += aiortc_hidden
+except Exception:
+    pass
 
 a = Analysis(
     ["run_server.py"],
@@ -67,6 +116,14 @@ a = Analysis(
     noarchive=True,
     optimize=0,
 )
+
+# Keep essential dist-info for packages that call importlib.metadata.version at runtime
+_keep_dist = ['mcp-', 'opentelemetry', 'fastmcp-', 'fastapi-', 'pydantic-']
+_saved = [e for e in a.datas if isinstance(e, tuple) and any(k in str(e[0]) for k in _keep_dist) and '.dist-info' in str(e[0])]
+for _list in [a.datas, a.binaries, a.zipfiles, a.scripts]:
+    _list[:] = [e for e in _list if not (isinstance(e, tuple) and '.dist-info' in str(e[0]) and not any(k in str(e[0]) for k in _keep_dist))]
+a.datas.extend(_saved)
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
