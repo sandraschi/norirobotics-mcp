@@ -119,9 +119,12 @@ export function Dashboard() {
       </div>
 
       {err && (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
-          API: {err} — start backend on port 11970:{" "}
-          <code className="text-xs">
+        <div
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
+          data-testid="dashboard-error"
+        >
+          API: {err} — start backend:{" "}
+          <code className="text-sm">
             uv run python -m norirobotics_mcp --serve
           </code>
         </div>

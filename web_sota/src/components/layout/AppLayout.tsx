@@ -4,11 +4,15 @@ import {
   Gauge,
   HelpCircle,
   Home,
+  Inbox,
   Menu,
+  MessageSquare,
   ScrollText,
   Settings,
+  Sparkles,
   Terminal,
   Video,
+  Wrench,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -19,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 async function checkBackendHealth(): Promise<{ ok: boolean; error?: string }> {
   try {
-    const r = await fetch("http://127.0.0.1:11970/api/health");
+    const r = await fetch("/api/health");
     if (!r.ok) return { ok: false, error: `HTTP ${r.status}` };
     return { ok: true };
   } catch (e) {
@@ -38,7 +42,7 @@ type ActiveRobotProfile = {
 
 async function fetchActiveRobotProfile(): Promise<ActiveRobotProfile> {
   try {
-    const r = await fetch("http://127.0.0.1:11970/api/robot-profiles/active");
+    const r = await fetch("/api/robot-profiles/active");
     if (!r.ok) return null;
     const d = await r.json();
     return d.active ?? null;
@@ -49,6 +53,10 @@ async function fetchActiveRobotProfile(): Promise<ActiveRobotProfile> {
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
+  { to: "/inbox", label: "Inbox", icon: Inbox },
+  { to: "/tools", label: "Tools", icon: Wrench },
+  { to: "/skills", label: "Skills", icon: Sparkles },
+  { to: "/chat", label: "Chat", icon: MessageSquare },
   { to: "/info", label: "Info", icon: Bot },
   { to: "/session", label: "Session", icon: Gauge },
   { to: "/control", label: "Control", icon: Terminal },
@@ -120,9 +128,7 @@ export function AppLayout() {
           {open && (
             <div>
               <div className="font-bold leading-tight">norirobotics-mcp</div>
-              <div className="text-[10px] text-muted-foreground">
-                Nori A3 · 11971
-              </div>
+              <div className="text-[10px] text-muted-foreground">Nori A3</div>
             </div>
           )}
         </div>

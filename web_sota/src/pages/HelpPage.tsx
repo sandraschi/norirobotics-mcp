@@ -284,14 +284,15 @@ export function HelpPage() {
                 <code className="text-primary">
                   uv run python -m norirobotics_mcp --serve
                 </code>{" "}
-                (port 11970)
+                (backend, see <code>/api/capabilities</code>)
               </li>
               <li>
                 Dashboard:{" "}
                 <code className="text-primary">
                   cd web_sota; npm install; npm run dev
                 </code>{" "}
-                (port 11971) or double-click <code>start.bat</code>
+                (frontend, see <code>/api/capabilities</code>) or double-click{" "}
+                <code>start.bat</code>
               </li>
               <li>
                 MCP client (stdio):{" "}
