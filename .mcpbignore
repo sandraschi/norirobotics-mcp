@@ -17,7 +17,14 @@ llms-full.txt
 # Build Artifacts
 dist/
 build/
+target/
 *.mcpb
+*.bak
+*.bak.*
+data/
+*.db
+*.sqlite3
+reports/
 
 # Non-MCP components (webapp, native, scripts)
 native/

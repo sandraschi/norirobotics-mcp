@@ -45,7 +45,7 @@ mcpb-pack:
 build-native:
     $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
     Set-Location '{{justfile_directory()}}\native'
-    pwsh -NoProfile -File '{{justfile_directory()}}\native\build.ps1'
+    powershell.exe -NoProfile -File '{{justfile_directory()}}\native\build.ps1'
 
 # Build the PyInstaller backend .exe and copy to Tauri resources
 build-sidecar:
@@ -62,4 +62,6 @@ cua-nsis-test:
 
 bootstrap:
     uv sync --group dev
+    uv run pre-commit install
+    Set-Location '{{justfile_directory()}}\web_sota'; npm ci
     Write-Host "norirobotics-mcp deps installed." -ForegroundColor Green

@@ -112,12 +112,14 @@ async def nori_session(
             robot, mock = await session_state.connect(force_mock=force_mock, profile_id=profile_id)
             info = getattr(robot, "info", None)
             profile = session_state.current_profile()
+            profile_name = profile.name if profile else "Virtual Twin"
+            profile_room = profile.robot_room if profile else ""
             return {
                 "success": True,
                 "message": (
-                    f"Connected to nori_sdk mock_session() (profile={profile.name if profile else 'Virtual Twin'})."
+                    f"Connected to nori_sdk mock_session() (profile={profile_name})."
                     if mock
-                    else f"Connected to Nori A3 '{profile.name}' (room={profile.robot_room})."
+                    else f"Connected to Nori A3 '{profile_name}' (room={profile_room})."
                 ),
                 "connected": True,
                 "mock": mock,

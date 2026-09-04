@@ -28,9 +28,9 @@ uv sync --extra dev
 
 ```bash
 just lint      # ruff + biome
-just test      # pytest (24 cases, run against the real nori_sdk mock — no network needed)
+just test      # pytest (51 cases, run against the real nori_sdk mock — no network needed)
 just fmt       # ruff format + fix
-just ci        # sync + test + lint (what CI runs)
+just ci        # sync + test + lint + pyright + tsc + biome (what CI runs)
 just serve     # start the MCP server (HTTP, :11970)
 ```
 

@@ -69,6 +69,7 @@ async def connect(*, force_mock: bool = False, profile_id: str | None = None) ->
     use_real = profile is not None and profile.kind == "physical" and not force_mock
 
     if use_real:
+        assert profile is not None  # narrowed by `use_real` above; keeps pyright honest
         from nori_sdk import RemoteTeleop, SupabaseSignaling, UserAuth
 
         auth = UserAuth(

@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased] — 2026-09-04 (assfix: endpoints, lint, type gates)
+
+### Fixed — assfix 2026-09-04 (fleet SOTA gaps)
+- REST: added fleet-standard `GET /api/status` (uptime, tool_count, session), `GET /api/capabilities`,
+  `POST /api/chat` + `POST /api/chat/stream` (honestly non-streaming) aliases for `POST /api/llm/chat` —
+  prior report flagged missing 1E/1B coverage; verified in OpenAPI schema (25 paths).
+- Lint: added `T20` (no `print`) to ruff select with per-file-ignores for `run_server.py`, `scripts/**`,
+  `tests/**`, `models/**`; fixed `text-slate-500` low-contrast in `Logging.tsx` → `text-slate-300`.
+- Types: added `pyright>=1.1.0` to `[project.optional-dependencies]` + `[dependency-groups]` dev,
+  fixed 11 `reportOptionalMemberAccess` errors in `session_state.py`/`tool_session.py` (profile narrowing).
+- Build: `justfile` `bootstrap` now runs `pre-commit install` + `npm ci`; bare `pwsh` → `powershell.exe -NoProfile -File`;
+  CI: Node `20`→`22`, added `pyright` gate (now green: ruff ✓, pyright 0, pytest 51/51, tsc ✓, biome ci ✓).
+- Docs: `llms-full.txt` expanded with new REST endpoints + profile-aware `nori_session` signature.
+
 ## [Unreleased] — 2026-09-04 (multi-bot profiles: physical vs. Virtual Twin)
 
 ### Added — a real A3 entered the picture, so "mock vs. real" had to stop being an env-var side effect

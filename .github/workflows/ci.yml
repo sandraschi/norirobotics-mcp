@@ -20,6 +20,8 @@ jobs:
         run: uv run ruff check .
       - name: Ruff format
         run: uv run ruff format --check .
+      - name: Pyright
+        run: uv run --with pyright pyright src/
       - name: Pytest
         run: uv run pytest -q
 
@@ -32,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - name: Install
         run: npm ci
       - name: Typecheck (tsc)

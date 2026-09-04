@@ -24,10 +24,11 @@ control loop only, all policy inference off-board. 4x 720p cameras, 2D LiDAR, du
 No session required. Returns static reference data sourced from
 mcp-central-docs/projects/norirobotics-mcp/RESEARCH.md.
 
-### nori_session(operation="connect"|"disconnect"|"status"|"wait_ready", force_mock=False)
-Opens/closes/inspects the one process-wide session. `connect` picks real nori_sdk.RemoteTeleop
-when NORI_MCP_SUPABASE_URL + NORI_MCP_SUPABASE_ANON_KEY + NORI_MCP_ROBOT_ROOM are all set,
-otherwise nori_sdk.mock.mock_session(). Idempotent.
+### nori_session(operation="connect"|"disconnect"|"status"|"wait_ready|list_profiles|add_profile|switch_profile|remove_profile", force_mock=False, profile_id, name, kind, ...)
+Opens/closes/inspects the one process-wide session and manages the multi-bot profile registry
+(Virtual Twin + named physical A3s). `connect` picks real nori_sdk.RemoteTeleop when the active
+profile is kind="physical", otherwise nori_sdk.mock.mock_session(). Idempotent. Every response
+carries robot_kind/profile_name.
 
 ### nori_control(operation=..., payload, targets, side, position_m, orientation_xyzw, arm, duration, wait, timeout)
 Requires an open session. Motion: jog, set_jog, clear_jog, action, pose. Safety: estop,
@@ -57,6 +58,15 @@ launch thread, no fabricated BOM). Closest structural precedent in the fleet: bu
 ## Ports
 
 11970 backend (FastAPI + FastMCP HTTP /mcp + REST /api/*), 11971 frontend (Vite React).
+
+## REST endpoints (fleet 1E)
+
+GET /api/health, GET /api/status (uptime, tool_count, session), GET /api/capabilities,
+GET /api/hero, GET /api/tools, GET /api/skills, GET /api/session, POST /api/session/connect,
+POST /api/session/disconnect, GET /api/robot-profiles + /active, POST /api/robot-profiles,
+POST /api/robot-profiles/{id}/activate, DELETE /api/robot-profiles/{id},
+POST /api/control/*, POST /api/recording/*, GET /api/logs, GET/POST /api/llm/providers+chat,
+POST /api/chat + /api/chat/stream (fleet-standard aliases, non-streaming today).
 
 ## Honesty notes for agents
 

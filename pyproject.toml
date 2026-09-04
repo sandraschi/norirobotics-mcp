@@ -31,6 +31,7 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
     "ruff>=0.16.0,<0.17",
+    "pyright>=1.1.0",
 ]
 
 [project.scripts]
@@ -51,8 +52,14 @@ line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "S", "UP", "RUF"]
+select = ["E", "F", "W", "I", "B", "S", "UP", "RUF", "T20"]
 ignore = ["S104", "S310", "S311", "B008", "B904", "E501", "RUF012", "S101", "S110"]
+
+[tool.ruff.lint.per-file-ignores]
+"run_server.py" = ["T20"]
+"scripts/**" = ["T20"]
+"tests/**" = ["T20"]
+"models/**" = ["T20"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -61,4 +68,5 @@ indent-style = "space"
 [dependency-groups]
 dev = [
     "ruff>=0.16.0,<0.17",
+    "pyright>=1.1.0",
 ]

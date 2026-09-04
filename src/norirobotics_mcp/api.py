@@ -99,6 +99,32 @@ async def health() -> dict[str, Any]:
     return {"status": "ok", "service": "norirobotics-mcp"}
 
 
+@router.get("/status")
+async def status() -> dict[str, Any]:
+    """Richer status probe — uptime, tool count, session state (fleet 1E)."""
+    return {
+        "status": "ok",
+        "service": "norirobotics-mcp",
+        "uptime_seconds": round(time.time() - _start_time, 1),
+        "tool_count": len(MCP_TOOLS),
+        "session_connected": session_state.get_session() is not None,
+        "mock": session_state.is_mock(),
+    }
+
+
+@router.get("/capabilities")
+async def capabilities() -> dict[str, Any]:
+    """Standard capability shape for frontend discovery (fleet 1B/1E)."""
+    return {
+        "service": "norirobotics-mcp",
+        "version": "0.1.0",
+        "mcp_http_path": "/mcp",
+        "tools": [t["name"] for t in MCP_TOOLS],
+        "ports": {"backend": 11970, "frontend": 11971},
+        "features": {"chat": True, "skills": False, "streaming": False},
+    }
+
+
 @router.get("/model/nori_a3.glb")
 async def model_nori_a3() -> FileResponse:
     if not _NORI_A3_GLB.is_file():
@@ -239,6 +265,25 @@ async def llm_providers() -> dict[str, Any]:
         except Exception:
             pass
     return {"providers": providers}
+
+
+@router.post("/chat")
+async def chat(body: dict[str, Any]) -> dict[str, Any]:
+    """Fleet-standard chat alias (1E) — same non-streaming helper as /api/llm/chat."""
+    return await llm_chat(body)
+
+
+@router.post("/chat/stream")
+async def chat_stream(body: dict[str, Any]) -> dict[str, Any]:
+    """Fleet-standard stream alias (1E) — honestly non-streaming for now.
+
+    Returns the full completion in one JSON payload with `"stream": False`
+    so Chat clients can wire to the standard route today; true NDJSON
+    streaming is a future enhancement, not silently faked.
+    """
+    result = await llm_chat(body)
+    result["stream"] = False
+    return result
 
 
 @llm_router.post("/chat")

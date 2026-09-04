@@ -12,7 +12,7 @@ const LEVEL_COLORS: Record<string, string> = {
   ERROR: "text-red-400 bg-red-950/40",
   WARNING: "text-yellow-400 bg-yellow-950/40",
   INFO: "text-blue-300 bg-blue-950/30",
-  DEBUG: "text-slate-500 bg-slate-900/30",
+  DEBUG: "text-slate-300 bg-slate-900/30",
 };
 
 export default function Logging() {
