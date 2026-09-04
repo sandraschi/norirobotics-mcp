@@ -12,6 +12,7 @@ from norirobotics_mcp.tool_control import nori_control
 from norirobotics_mcp.tool_info import nori_info
 from norirobotics_mcp.tool_recording import nori_recording
 from norirobotics_mcp.tool_session import nori_session
+from norirobotics_mcp.tool_vr import nori_vr
 
 mcp = FastMCP(
     "norirobotics-mcp",
@@ -20,7 +21,8 @@ mcp = FastMCP(
         "use nori_info(operation=...) for specs/SDK/lineage/community facts (no session needed), "
         "nori_session(operation='connect') to open a control session (real robot when "
         "NORI_MCP_SUPABASE_* env vars are set, otherwise nori_sdk's own mock_session()), "
-        "then nori_control for motion/safety and nori_recording for LeRobot-format episode capture. "
+        "then nori_control for motion/safety, nori_recording for LeRobot-format episode capture, "
+        "and nori_vr for Unity/Overte/Godot/MuJoCo/Isaac spawning via other fleet repos. "
         "Always call nori_session(operation='connect') before nori_control/nori_recording."
     ),
 )
@@ -65,6 +67,16 @@ mcp.tool(
     },
 )(nori_recording)
 
+mcp.tool(
+    annotations={"readOnlyHint": False, "openWorldHint": True},
+    output_schema={
+        "type": "object",
+        "properties": {"success": {"type": "boolean"}, "message": {"type": "string"}},
+        "required": ["success", "message"],
+    },
+    app=True,
+)(nori_vr)
+
 
 @mcp.tool(
     annotations={"readOnlyHint": True, "openWorldHint": False},
@@ -76,14 +88,14 @@ mcp.tool(
     app=True,
 )
 async def nori_help() -> dict[str, Any]:
-    """NORI_HELP — quick reference for norirobotics-mcp's four tools and typical call order.
+    """NORI_HELP — quick reference for norirobotics-mcp's five tools and typical call order.
 
     Returns:
         success (bool), message (str), tools (list of {name, purpose}), typical_flow (list of str).
     """
     return {
         "success": True,
-        "message": "norirobotics-mcp: 4 tools, session-gated motion/recording.",
+        "message": "norirobotics-mcp: 5 tools, session-gated motion/recording + VR.",
         "tools": [
             {
                 "name": "nori_info",
@@ -100,6 +112,10 @@ async def nori_help() -> dict[str, Any]:
             {
                 "name": "nori_recording",
                 "purpose": "start / stop / snapshot / frames / set_bitrate / set_paused — LeRobot-format episode capture. Requires an open session.",
+            },
+            {
+                "name": "nori_vr",
+                "purpose": "unity_spawn/overte_spawn/godot_spawn/mujoco_view/isaac_export — VR/physics twin via other fleet repos (Unity/Overte/Godot/MuJoCo/Isaac).",
             },
         ],
         "typical_flow": [
