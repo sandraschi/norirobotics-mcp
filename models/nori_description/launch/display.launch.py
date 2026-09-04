@@ -11,20 +11,14 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     use_gui = LaunchConfiguration("use_gui")
     use_rviz = LaunchConfiguration("use_rviz")
-    launch_directory = PathJoinSubstitution(
-        [FindPackageShare("nori_description"), "launch"]
-    )
+    launch_directory = PathJoinSubstitution([FindPackageShare("nori_description"), "launch"])
 
     description_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([launch_directory, "description.launch.py"])
-        ),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([launch_directory, "description.launch.py"])),
         launch_arguments={"use_gui": use_gui}.items(),
     )
     rviz_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([launch_directory, "rviz.launch.py"])
-        ),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([launch_directory, "rviz.launch.py"])),
         condition=IfCondition(use_rviz),
     )
 

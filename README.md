@@ -39,7 +39,9 @@ narrower, agent-oriented view (session status, tool calls, recording state).
 | **Hands-out** | robot telemetry/status/camera_layout, LeRobot-format episode recordings, video snapshots | `nori_session`, `nori_recording` |
 
 - Specs, SDK links, XLeRobot/HF LeRobot lineage, and Hacker News launch-thread reaction — no session required (`nori_info`)
-- Open/close/inspect a live control session, real or mock (`nori_session`)
+- Open/close/inspect a live control session, and manage named robot profiles — Virtual Twin
+  plus any number of registered physical A3s, each response explicit about which one produced
+  it (`nori_session`)
 - Jog, move-to-target, Cartesian pose control, e-stop and fault reset (`nori_control`)
 - Start/stop episode recording in LeRobot-compatible format, video snapshot/bitrate control (`nori_recording`)
 - **Live 3D viewer of the A3** right in the webapp — the correctly-posed rig, rendered from a
@@ -112,6 +114,7 @@ See [INSTALL.md](INSTALL.md) for the drag-and-drop `.mcpb` path and full options
 - "What are the Nori A3's specs, and what did Hacker News say about it at launch?"
 - "Open a Nori session and check the current telemetry."
 - "Start an episode recording for pouring water into a cup, then stop it after I confirm."
+- "Register a physical A3 profile for the office unit and switch to it."
 
 ## Documentation
 

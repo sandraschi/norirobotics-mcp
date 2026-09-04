@@ -54,9 +54,15 @@ async def nori_control(
         reset_latch      — clear the e-stop latch after a confirmed stop.
         reset_arm        — reset a single arm's fault state. Args: arm ("left"|"right").
 
-    Returns:
-        success (bool), message (str), operation-specific data. On failure: error, error_type,
-        and — for motion ops issued without a session — a suggestion to connect first.
+    ## Return Format
+    {"success": bool, "message": str, ...operation-specific data}. On failure: error, error_type,
+    and — for motion ops issued without a session — a suggestion to connect first.
+
+    ## Examples
+    nori_control(operation="estop")
+    nori_control(operation="action", targets={"left_gripper": 0.5})
+    nori_control(operation="pose", side="left", position_m=[0.3, 0.1, 0.2])
+    nori_control(operation="reset_arm", arm="left")
     """
     op = operation.lower().strip()
     logger.info("nori_control(%s)", op)

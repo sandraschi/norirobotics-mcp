@@ -14,7 +14,9 @@ Claude / MCP client
 |  nori_recording             record/snapshot/frames/bitrate/pause
 +-------------------------+
         |
-        v  nori_sdk.RemoteTeleop  (real)   OR   nori_sdk.mock.mock_session()  (default)
+        v  robot_profiles.py picks a named profile ("Virtual Twin" default, or
+        v  any registered physical A3) -->
+        v  nori_sdk.RemoteTeleop  (kind="physical")   OR   nori_sdk.mock.mock_session()  (kind="virtual")
 +-------------------------+
 |  WebRTC data channel     |          no hardware -> in-process MockRobot,
 |  + Supabase Realtime     |          same API surface, zero network calls
@@ -33,16 +35,27 @@ matches `nori-sdk`'s own model (one robot, one operator control channel). `nori_
 operation="connect")` is idempotent: if a session is already open, it's reused rather than
 re-opened.
 
-Which backend `connect` picks:
+Which backend `connect` picks is a **named-profile choice**, not a bare env-var check —
+`src/norirobotics_mcp/robot_profiles.py`'s `RobotProfileStore` holds any number of profiles
+(always at least the built-in `virtual` one), each explicitly `kind="physical"` or
+`kind="virtual"`. This exists because a physical A3 is no longer hypothetical or singular: this
+repo's own maintainer has a live A3 accessible in someone else's office, distinct from any unit
+she owns herself, so "the one physical robot" stopped being a safe assumption.
 
 | Condition | Backend |
 |---|---|
-| `NORI_MCP_SUPABASE_URL` + `NORI_MCP_SUPABASE_ANON_KEY` + `NORI_MCP_ROBOT_ROOM` all set, `force_mock` not passed | Real `nori_sdk.RemoteTeleop` over WebRTC/Supabase |
-| Otherwise (default, pre-hardware) | `nori_sdk.mock.mock_session()` |
+| `connect(profile_id=...)` (or the store's active profile) resolves to a `kind="physical"` profile, `force_mock` not passed | Real `nori_sdk.RemoteTeleop` over WebRTC/Supabase, using *that profile's* credentials |
+| Profile is `kind="virtual"`, or `force_mock=true` overrides a physical selection | `nori_sdk.mock.mock_session()` |
 
 This is the **only** branch point in the codebase between mock and real — every tool
 (`nori_control`, `nori_recording`) calls the same session object regardless of backend, because
-`MockRobot` implements the same method surface as the real `RemoteTeleop` session.
+`MockRobot` implements the same method surface as the real `RemoteTeleop` session. Which profile
+actually backed a given session is never left implicit: `session_state.current_profile()` /
+`current_profile_or_pending()` back a `robot_kind`/`profile_name` pair stamped onto every
+`nori_session`/`nori_recording` response (`robot_profiles.provenance_fields()`) — the legacy
+single-set-of-env-vars flow still works (auto-migrated into a named physical profile on first
+run), but the ambiguity of "is `mock: true` because nothing's configured, or because something's
+broken" is gone.
 
 ## Why no local/serial bridge exists
 

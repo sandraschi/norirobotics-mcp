@@ -1,0 +1,6 @@
+{
+  "name": "norirobotics-mcp",
+  "version": "0.1.0",
+  "description": "Nori Robotics A3 bimanual home robot MCP: specs/SDK/lineage tools, live control sessions, motion/safety control, and LeRobot-format episode recording.",
+  "hooks": "../hooks/hooks.json"
+}

@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet } from "@/api/client";
+import { RobotOnboarding } from "@/components/RobotOnboarding";
 import { Card, CardTitle } from "@/components/ui/card";
 
 type Health = { status: string; service: string };
@@ -125,6 +126,8 @@ export function Dashboard() {
           </code>
         </div>
       )}
+
+      <RobotOnboarding />
 
       <div>
         <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">

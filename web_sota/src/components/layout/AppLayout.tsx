@@ -11,10 +11,41 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useZoom } from "@/lib/use-zoom";
 import { cn } from "@/lib/utils";
+
+async function checkBackendHealth(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const r = await fetch("http://127.0.0.1:11970/api/health");
+    if (!r.ok) return { ok: false, error: `HTTP ${r.status}` };
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Network error",
+    };
+  }
+}
+
+type ActiveRobotProfile = {
+  id: string;
+  name: string;
+  kind: "physical" | "virtual";
+} | null;
+
+async function fetchActiveRobotProfile(): Promise<ActiveRobotProfile> {
+  try {
+    const r = await fetch("http://127.0.0.1:11970/api/robot-profiles/active");
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.active ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
@@ -31,7 +62,50 @@ const nav = [
 export function AppLayout() {
   const [open, setOpen] = useState(true);
   const [mobile, setMobile] = useState(false);
+  const [backendOk, setBackendOk] = useState<boolean | null>(null);
+  const [activeRobot, setActiveRobot] = useState<ActiveRobotProfile>(null);
   const loc = useLocation();
+
+  useZoom();
+
+  const refreshBackend = useCallback(async () => {
+    const h = await checkBackendHealth();
+    setBackendOk(h.ok);
+    setActiveRobot(await fetchActiveRobotProfile());
+  }, []);
+
+  // Poll via HTTP every 10s (works in dev browser) - one extra fetch piggybacked
+  // on the existing backend-health poll rather than a second interval.
+  useEffect(() => {
+    refreshBackend();
+    const interval = setInterval(refreshBackend, 10_000);
+    return () => clearInterval(interval);
+  }, [refreshBackend]);
+
+  // Listen for Tauri "backend-status" event (instant updates in NSIS WebView)
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    (async () => {
+      try {
+        const { listen } = await import("@tauri-apps/api/event");
+        unlisten = await listen<string>("backend-status", (event) => {
+          if (event.payload === "ready") {
+            refreshBackend();
+          } else if (
+            typeof event.payload === "string" &&
+            event.payload.startsWith("error:")
+          ) {
+            setBackendOk(false);
+          }
+        });
+      } catch {
+        // Not inside Tauri — HTTP polling handles it
+      }
+    })();
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [refreshBackend]);
 
   return (
     <div className="min-h-screen flex text-foreground">
@@ -112,10 +186,44 @@ export function AppLayout() {
 
       <div className="flex-1 flex flex-col min-w-0 min-h-screen pt-12 md:pt-0">
         <header className="hidden md:flex h-14 items-center border-b border-border/60 px-6 bg-background/40 backdrop-blur-sm sticky top-0 z-20">
-          <div className="text-sm text-muted-foreground">
-            MCP <code className="text-primary">/mcp</code> · API{" "}
-            <code className="text-primary">/api</code> · backend{" "}
-            <code className="text-primary">11970</code>
+          <div className="text-sm text-muted-foreground flex items-center gap-3">
+            <span>
+              MCP <code className="text-primary">/mcp</code> · API{" "}
+              <code className="text-primary">/api</code>
+            </span>
+            <span
+              className="flex items-center gap-1.5"
+              data-testid="backend-dot"
+            >
+              <span
+                className={cn(
+                  "w-2 h-2 rounded-full animate-pulse",
+                  backendOk === null
+                    ? "bg-gray-500"
+                    : backendOk
+                      ? "bg-green-500"
+                      : "bg-red-500",
+                )}
+              />
+              {backendOk === null
+                ? "Connecting..."
+                : backendOk
+                  ? "Connected"
+                  : "Offline"}
+            </span>
+            <span
+              className={cn(
+                "text-xs px-2 py-0.5 rounded-full border",
+                activeRobot?.kind === "physical"
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-sky-500/10 text-sky-400 border-sky-500/30",
+              )}
+              data-testid="robot-kind-badge"
+            >
+              {activeRobot?.kind === "physical"
+                ? `🤖 ${activeRobot.name}`
+                : `🖥️ ${activeRobot?.name ?? "Virtual Twin"}`}
+            </span>
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 max-w-6xl w-full mx-auto">

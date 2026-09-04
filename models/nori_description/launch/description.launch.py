@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 import yaml
-
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
@@ -19,7 +18,6 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
-
 
 # Per-chassis USB serial paths, written by `nori-update-serial-ports`. Absent on
 # a robot that has never been localized, in which case the committed defaults
@@ -82,22 +80,14 @@ def generate_launch_description():
     use_ros2_control = LaunchConfiguration("use_ros2_control")
     feetech_bus_port = LaunchConfiguration("feetech_bus_port")
     feetech_baud_rate = LaunchConfiguration("feetech_baud_rate")
-    feetech_response_timeout_ms = LaunchConfiguration(
-        "feetech_response_timeout_ms"
-    )
+    feetech_response_timeout_ms = LaunchConfiguration("feetech_response_timeout_ms")
     feetech_max_read_failures = LaunchConfiguration("feetech_max_read_failures")
     pico_port = LaunchConfiguration("pico_port")
-    central_lift_calibration_file = LaunchConfiguration(
-        "central_lift_calibration_file"
-    )
+    central_lift_calibration_file = LaunchConfiguration("central_lift_calibration_file")
     wheel_acceleration = LaunchConfiguration("wheel_acceleration")
     wheel_max_speed_raw = LaunchConfiguration("wheel_max_speed_raw")
-    wheel_velocity_steps_per_raw = LaunchConfiguration(
-        "wheel_velocity_steps_per_raw"
-    )
-    xacro_file = PathJoinSubstitution(
-        [FindPackageShare("nori_description"), "urdf", "nori.urdf.xacro"]
-    )
+    wheel_velocity_steps_per_raw = LaunchConfiguration("wheel_velocity_steps_per_raw")
+    xacro_file = PathJoinSubstitution([FindPackageShare("nori_description"), "urdf", "nori.urdf.xacro"])
 
     robot_description = {
         "robot_description": ParameterValue(
@@ -132,12 +122,8 @@ def generate_launch_description():
         )
     }
 
-    use_joint_state_publisher_gui = AndSubstitution(
-        use_joint_state_publisher, use_gui
-    )
-    use_headless_joint_state_publisher = AndSubstitution(
-        use_joint_state_publisher, NotSubstitution(use_gui)
-    )
+    use_joint_state_publisher_gui = AndSubstitution(use_joint_state_publisher, use_gui)
+    use_headless_joint_state_publisher = AndSubstitution(use_joint_state_publisher, NotSubstitution(use_gui))
 
     return LaunchDescription(
         [
@@ -159,15 +145,13 @@ def generate_launch_description():
                 default_value="false",
                 choices=["true", "false"],
                 description=(
-                    "Add the central-lift and wheel control systems. Use "
-                    "nori_moveit_config for rotary-arm control."
+                    "Add the central-lift and wheel control systems. Use nori_moveit_config for rotary-arm control."
                 ),
             ),
             DeclareLaunchArgument(
                 "feetech_bus_port",
                 default_value=(
-                    user_port("left_feetech")
-                    or "/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B79016521-if00"
+                    user_port("left_feetech") or "/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B79016521-if00"
                 ),
                 description="Serial device for the bus-1 wheels.",
             ),
@@ -188,10 +172,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "pico_port",
-                default_value=(
-                    user_port("pico")
-                    or "/dev/serial/by-id/usb-Raspberry_Pi_Pico_2_789ADB3F1073A144-if00"
-                ),
+                default_value=(user_port("pico") or "/dev/serial/by-id/usb-Raspberry_Pi_Pico_2_789ADB3F1073A144-if00"),
                 description="Persistent serial path for the central-lift Pico.",
             ),
             DeclareLaunchArgument(
@@ -212,9 +193,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "wheel_velocity_steps_per_raw",
                 default_value="1.0",
-                description=(
-                    "Encoder steps/second represented by one raw velocity unit."
-                ),
+                description=("Encoder steps/second represented by one raw velocity unit."),
             ),
             Node(
                 package="robot_state_publisher",

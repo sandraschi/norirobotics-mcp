@@ -199,7 +199,9 @@ def main() -> None:
     combined.apply_transform(ZUP_TO_YUP)
     FLAT_GLB_OUT.parent.mkdir(parents=True, exist_ok=True)
     combined.export(str(FLAT_GLB_OUT))
-    print(f"Wrote {FLAT_GLB_OUT} ({FLAT_GLB_OUT.stat().st_size / 1024:.1f} KB, {len(combined.vertices)} verts, {len(combined.faces)} tris)")
+    print(
+        f"Wrote {FLAT_GLB_OUT} ({FLAT_GLB_OUT.stat().st_size / 1024:.1f} KB, {len(combined.vertices)} verts, {len(combined.faces)} tris)"
+    )
 
     # ---- Decimated Resonite mesh-JSON (from the same flattened, correct geometry) ----
     target_tris = 8000
@@ -237,7 +239,11 @@ def main() -> None:
     for body_id in range(1, model.nbody):  # body 0 is the world
         name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, body_id) or f"body_{body_id}"
         parent_id = int(model.body_parentid[body_id])
-        parent_name = "world" if parent_id == 0 else (mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, parent_id) or f"body_{parent_id}")
+        parent_name = (
+            "world"
+            if parent_id == 0
+            else (mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, parent_id) or f"body_{parent_id}")
+        )
         local_mat = body_local_matrix(model, body_id)
 
         parts = body_parts.get(body_id)
@@ -252,7 +258,9 @@ def main() -> None:
     RIG_GLB_OUT.write_bytes(trimesh.exchange.gltf.export_glb(scene, include_normals=True))
     body_count = model.nbody - 1
     mesh_body_count = len(body_parts)
-    print(f"Wrote {RIG_GLB_OUT} ({RIG_GLB_OUT.stat().st_size / 1024:.1f} KB, {body_count} nodes, {mesh_body_count} with geometry)")
+    print(
+        f"Wrote {RIG_GLB_OUT} ({RIG_GLB_OUT.stat().st_size / 1024:.1f} KB, {body_count} nodes, {mesh_body_count} with geometry)"
+    )
 
 
 if __name__ == "__main__":

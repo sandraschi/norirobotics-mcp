@@ -12,8 +12,20 @@ MCP_TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "nori_session",
-        "description": "Open/close/inspect the live Nori A3 control session (real or nori_sdk mock).",
-        "params": {"operation": "connect|disconnect|status|wait_ready", "force_mock": "bool"},
+        "description": "Open/close/inspect the live Nori A3 control session, and manage the multi-bot "
+        "profile registry (Virtual Twin plus any number of named physical A3s).",
+        "params": {
+            "operation": "connect|disconnect|status|wait_ready|list_profiles|add_profile|switch_profile|remove_profile",
+            "force_mock": "bool",
+            "profile_id": "str",
+            "name": "str",
+            "kind": "physical|virtual",
+            "supabase_url": "str",
+            "supabase_anon_key": "str",
+            "robot_room": "str",
+            "user_email": "str",
+            "user_password": "str",
+        },
     },
     {
         "name": "nori_control",

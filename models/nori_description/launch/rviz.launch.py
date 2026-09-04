@@ -7,9 +7,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    rviz_config = PathJoinSubstitution(
-        [FindPackageShare("nori_description"), "rviz", "nori.rviz"]
-    )
+    rviz_config = PathJoinSubstitution([FindPackageShare("nori_description"), "rviz", "nori.rviz"])
 
     return LaunchDescription(
         [

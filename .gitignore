@@ -31,3 +31,4 @@ mcpb/uv.lock
 data/
 .coverage
 *.mcpb
+reports/

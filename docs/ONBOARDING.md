@@ -1,47 +1,70 @@
 # Onboarding — Nori A3
 
-This MCP server controls a **physical robot that does not exist in this household yet**. Nori
-A3 is preorder-only (second batch, $1,688, no deposit), shipping **Fall 2026**. Onboarding here
-means understanding the mock-vs-real posture, not bringing hardware up.
+This MCP server started life controlling **a physical robot that didn't exist in this household
+yet** (Nori A3 is preorder-only, $1,688, shipping Fall 2026). That's no longer the only real A3
+in the picture — this repo's own maintainer emailed Nori Robotics' founder with a link to it, and
+he has a live A3 running in his office. So "onboarding" now means two things: understanding the
+mock-vs-real posture, and registering whichever real robots you actually have access to as named
+**profiles** — not a single env-var-driven identity.
 
-## What you need (today)
+## Physical vs. Virtual Twin — always explicit
 
-- Nothing. `nori_info` (specs/SDK/lineage/community) works with zero configuration.
-- `nori_session(operation="connect")` works with zero configuration too — it falls back to
-  `nori_sdk.mock.mock_session()`, the SDK's own upstream-supported mock robot. All 24 tests in
-  this repo run against that mock.
+Every `nori_session`/`nori_recording` response carries `robot_kind` (`"physical"` or
+`"virtual"`) and `profile_name`. Never infer real-vs-mock from anything else — a training
+pipeline or a person reading a recorded episode needs a direct answer, not an inference from
+whether some env var happened to be set.
 
-## What you'll need once a unit ships
+## What you need (today, zero configuration)
 
-- A Nori A3 unit, powered on and paired to your Nori account (via `lab.norirobotics.com`).
-- Supabase project URL + anon key (Nori Robotics provisions this per-account — not something you
-  self-host).
-- Your robot's `room` identifier (e.g. `NORI-A3-0001`), from Nori Lab.
-- Your Nori account email/password (for `UserAuth` token refresh).
+- `nori_info` (specs/SDK/lineage/community) — no session required.
+- `nori_session(operation="connect")` — works out of the box against the built-in **Virtual
+  Twin** profile (`nori_sdk.mock.mock_session()`, the SDK's own upstream-supported mock). The
+  full test suite runs against this.
 
-Set these in `.env` (copy from `.env.example`):
+## Registering a physical A3
 
+Any physical A3 you have Supabase credentials for — your own unit once it ships, or someone
+else's (e.g. a demo unit, a colleague's office robot) if they've shared access — becomes a named
+profile via `nori_session(operation="add_profile", ...)` or the webapp's Session page:
+
+```python
+nori_session(
+    operation="add_profile",
+    name="Mr. Li's A3",  # or whatever's meaningful to you
+    kind="physical",
+    supabase_url="https://xxxx.supabase.co",
+    supabase_anon_key="...",
+    robot_room="NORI-A3-0001",  # from Nori Lab
+    user_email="you@example.com",  # optional, for UserAuth token refresh
+    user_password="...",  # optional
+)
 ```
-NORI_MCP_SUPABASE_URL=https://xxxx.supabase.co
-NORI_MCP_SUPABASE_ANON_KEY=...
-NORI_MCP_ROBOT_ROOM=NORI-A3-0001
-NORI_MCP_USER_EMAIL=you@example.com
-NORI_MCP_USER_PASSWORD=...
-```
 
-Once set, `nori_session(operation="connect")` opens a real WebRTC session instead of the mock —
-no code changes needed, `session_state.py` picks real vs. mock based on whether credentials are
-present. Pass `force_mock=true` to any `connect` call to keep testing against the mock even with
-real credentials configured.
+This performs a real `wait_ready()` round-trip (up to 15s) before saving — bad credentials are
+rejected outright, not silently stored as a broken profile. You can register more than one
+physical A3 this way; `nori_session(operation="list_profiles")` shows everything saved, and
+`nori_session(operation="switch_profile", profile_id=...)` picks which one future `connect()`
+calls use.
 
-## Bring-up checklist (once you have a unit)
+**Legacy `.env` path still works.** If `NORI_MCP_SUPABASE_URL` / `NORI_MCP_SUPABASE_ANON_KEY` /
+`NORI_MCP_ROBOT_ROOM` are set in `.env` (copied from `.env.example`), they're auto-migrated into
+a named physical profile the first time the server starts — no forced re-onboarding for anyone
+already using the old single-robot env-var flow.
+
+Pass `force_mock=true` to any `connect` call to test against the Virtual Twin even with a
+physical profile active or selected — the response still honestly reports `robot_kind: "virtual"`
+in that case, never the bypassed physical profile's identity.
+
+## Bring-up checklist (once you have real credentials for a unit)
 
 1. Power on the A3, confirm it's paired in Nori Lab and shows "online."
-2. Set the four `NORI_MCP_SUPABASE_*` / `NORI_MCP_ROBOT_ROOM` env vars above.
-3. `nori_session(operation="connect")` → confirm `mock: false` in the response.
-4. `nori_session(operation="wait_ready")` → confirm you get back a real `RobotInfo`, not the
+2. `nori_session(operation="add_profile", kind="physical", ...)` with its Supabase URL/anon
+   key/robot_room — this both registers and live-verifies the connection.
+3. `nori_session(operation="switch_profile", profile_id=...)` to make it the active profile.
+4. `nori_session(operation="connect")` → confirm `robot_kind: "physical"` in the response.
+5. `nori_session(operation="wait_ready")` → confirm you get back a real `RobotInfo`, not the
    mock's synthetic one.
-5. Before any motion: check battery via `nori_session(operation="status")` telemetry, and clear
+6. Before any motion: check battery via `nori_session(operation="status")` telemetry, and clear
    the workspace — the A3's arms have 55cm reach and a 1.5kg payload per arm.
 
 ## Costs / notes
@@ -59,8 +82,8 @@ real credentials configured.
 - Don't assume `nori-sdk`'s base `pip install nori-sdk` gives you WebRTC — that install is
   "protocol only, zero dependencies." This repo depends on `nori-sdk[all]` (aiortc + av +
   websocket-client) specifically so real sessions work out of the box.
-- `mock: true` in a `nori_session` response is expected and correct pre-hardware — it is not a
-  bug or a sign of misconfiguration.
+- `robot_kind: "virtual"` in a `nori_session` response is expected and correct until you've
+  registered a physical profile — it is not a bug or a sign of misconfiguration.
 
 ## Reference docs
 

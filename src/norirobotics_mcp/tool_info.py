@@ -41,8 +41,14 @@ async def nori_info(
         actuator_upgrade  — HN-sourced note on RC-servo-vs-QDD actuator upgrade path (no fabricated BOM)
         fleet_peers       — sandraschi robotics-mcp fleet members relevant to Nori integration
 
-    Returns:
-        success (bool), message (str), and operation-specific data.
+    ## Return Format
+    {"success": bool, "message": str, ...operation-specific data}
+
+    ## Examples
+    nori_info(operation="info")
+    nori_info(operation="specs")
+    nori_info(operation="sdk_links")
+    nori_info(operation="fleet_peers")
     """
     op = operation.lower().strip()
     logger.info("nori_info(%s)", op)

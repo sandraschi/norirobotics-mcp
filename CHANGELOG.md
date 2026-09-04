@@ -1,5 +1,35 @@
 # Changelog
 
+## [Unreleased] — 2026-09-04 (multi-bot profiles: physical vs. Virtual Twin)
+
+### Added — a real A3 entered the picture, so "mock vs. real" had to stop being an env-var side effect
+- The repo's own maintainer emailed Nori Robotics' founder with a link to this project, and he
+  has a live A3 running in his office — the first real second identity this repo has ever had to
+  represent alongside the built-in mock. Nothing in the tool output, webapp, or recorded LeRobot
+  episodes previously made physical-vs-mock unambiguous once more than one robot identity could
+  exist; that's the gap this closes.
+- `src/norirobotics_mcp/robot_profiles.py` (new): `RobotProfile`/`RobotProfileStore`, a flat
+  JSON-file registry (`data/robot_profiles.json`) of named robot profiles, each explicitly
+  `kind="physical"` or `kind="virtual"`. Always seeds a built-in `virtual` ("Virtual Twin")
+  profile; auto-migrates legacy `.env`-only `NORI_MCP_SUPABASE_*` credentials into a named
+  physical profile once, so existing single-robot setups aren't forced to re-onboard.
+- `nori_session` gained `list_profiles`/`add_profile`/`switch_profile`/`remove_profile`
+  operations. `add_profile` with `kind="physical"` live-tests the credentials (a real
+  `wait_ready()` round-trip) before saving — caught and fixed a real bug during implementation
+  where `RemoteTeleop.__aenter__()` alone doesn't block on the actual handshake, so bad
+  credentials were being silently accepted; the test now correctly rejects them.
+- Every `nori_session`/`nori_recording` response now carries explicit `robot_kind` (`"physical"`
+  or `"virtual"`) and `profile_name` fields, sourced from a single `provenance_fields()` helper —
+  not inferred from a bare `mock` bool. `force_mock=true` against a selected physical profile
+  correctly reports `robot_kind: "virtual"`, never the bypassed profile's identity.
+- Webapp: `SessionPage.tsx` gained profile CRUD (add/activate/remove, live Supabase-credential
+  form for physical profiles); new `RobotOnboarding.tsx` banner on the Dashboard prompts for a
+  physical profile until one exists; `AppLayout.tsx`'s header gained a live robot-kind badge next
+  to the existing backend-status dot.
+- New REST routes: `GET /api/robot-profiles`, `GET /api/robot-profiles/active`,
+  `POST /api/robot-profiles`, `POST /api/robot-profiles/{id}/activate`,
+  `DELETE /api/robot-profiles/{id}`.
+
 ## [Unreleased] — 2026-09-02 (Z-up/Y-up axis fix)
 
 ### Fixed — model was actually Z-up in a Y-up viewer, masked by camera framing

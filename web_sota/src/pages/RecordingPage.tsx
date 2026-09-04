@@ -30,9 +30,10 @@ export function RecordingPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Recording</h1>
       <p className="text-sm text-muted-foreground">
-        Requires an open session. <code>episode_start</code>/<code>episode_stop</code> map
-        directly onto nori_sdk's own recording verbs and persist server-side (Nori's backend) in
-        LeRobot-compatible format — the handoff point into <code>vla-mcp</code> / Hugging Face
+        Requires an open session. <code>episode_start</code>/
+        <code>episode_stop</code> map directly onto nori_sdk's own recording
+        verbs and persist server-side (Nori's backend) in LeRobot-compatible
+        format — the handoff point into <code>vla-mcp</code> / Hugging Face
         LeRobot training pipelines.
       </p>
       <Card className="space-y-3">

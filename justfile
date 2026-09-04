@@ -38,7 +38,7 @@ ci:
     uv run ruff format --check .
 
 mcpb-pack:
-    pwsh -NoProfile -File '{{justfile_directory()}}\mcpb\pack.ps1'
+    powershell.exe -NoProfile -File '{{justfile_directory()}}\mcpb\pack.ps1'
 
 # --- Native / Tauri (config scaffolded; actual build via nsis-build skill) ---
 
@@ -46,6 +46,19 @@ build-native:
     $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
     Set-Location '{{justfile_directory()}}\native'
     pwsh -NoProfile -File '{{justfile_directory()}}\native\build.ps1'
+
+# Build the PyInstaller backend .exe and copy to Tauri resources
+build-sidecar:
+    powershell.exe -NoProfile -File '{{justfile_directory()}}\native\build-sidecar.ps1'
+
+# Build Tauri native app (debug, skip PyInstaller)
+build-native-debug:
+    powershell.exe -NoProfile -File '{{justfile_directory()}}\native\ensure-sidecar-stub.ps1'
+    Set-Location '{{justfile_directory()}}\native'; $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"; npm install; npx @tauri-apps/cli build --debug
+
+# Run CUA-NSIS smoke test (install → launch → verify → uninstall)
+cua-nsis-test:
+    uv run python scripts/cua-smoke.py
 
 bootstrap:
     uv sync --group dev

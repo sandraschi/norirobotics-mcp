@@ -1,4 +1,4 @@
-const base = "";
+const base = import.meta.env.DEV ? "" : "http://127.0.0.1:11970";
 
 async function parseErr(r: Response): Promise<string> {
   try {

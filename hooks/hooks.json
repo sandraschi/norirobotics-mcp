@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "text",
+            "text": "## Session Context (norirobotics-mcp)\n\nYou have access to the Nori Robotics A3 bimanual home robot MCP: specs/SDK/lineage tools, live control session management, motion/safety control, and LeRobot-format episode recording (real robot or a built-in mock when no credentials are configured).\n\n**Before starting work:**\n1. Get robot facts/specs (no session needed): `nori_info(operation=\"info\")`\n2. Open a control session: `nori_session(operation=\"connect\")`\n3. Check session/robot status: `nori_session(operation=\"status\")`\n\n**At end of work:**\n- Close the session: `nori_session(operation=\"disconnect\")` (or `nori_shutdown()`)"
+          }
+        ]
+      }
+    ]
+  }
+}

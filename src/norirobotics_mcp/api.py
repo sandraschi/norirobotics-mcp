@@ -18,6 +18,7 @@ from norirobotics_mcp import session_state
 from norirobotics_mcp.config import load_settings
 from norirobotics_mcp.knowledge import FLEET_PEERS, NORI_HERO
 from norirobotics_mcp.lifecycle import combined_lifespan
+from norirobotics_mcp.robot_profiles import profile_store
 from norirobotics_mcp.server import mcp
 from norirobotics_mcp.tool_control import nori_control
 from norirobotics_mcp.tool_recording import nori_recording
@@ -140,6 +141,59 @@ async def session_connect(force_mock: bool = Query(False)) -> dict[str, Any]:
 @router.post("/session/disconnect")
 async def session_disconnect() -> dict[str, Any]:
     return await nori_session(operation="disconnect")
+
+
+# ── Robot profiles (physical vs. virtual, multi-bot registry) ──────────
+
+
+@router.get("/robot-profiles")
+async def robot_profiles_list() -> dict[str, Any]:
+    return {
+        "profiles": [p.model_dump() for p in profile_store.list()],
+        "active_id": profile_store.active_id(),
+    }
+
+
+@router.get("/robot-profiles/active")
+async def robot_profiles_active() -> dict[str, Any]:
+    """Lightweight endpoint for the AppLayout header badge — avoids fetching every
+    saved profile just to show which one is currently active."""
+    active = profile_store.get(profile_store.active_id())
+    return {"active": active.model_dump() if active else None}
+
+
+@router.post("/robot-profiles")
+async def robot_profiles_add(body: dict[str, Any]) -> dict[str, Any]:
+    result = await nori_session(
+        operation="add_profile",
+        profile_id=body.get("id"),
+        name=body.get("name"),
+        kind=body.get("kind"),
+        supabase_url=body.get("supabase_url"),
+        supabase_anon_key=body.get("supabase_anon_key"),
+        robot_room=body.get("robot_room"),
+        user_email=body.get("user_email"),
+        user_password=body.get("user_password"),
+    )
+    if not result.get("success"):
+        raise HTTPException(status_code=422, detail=result.get("error", "Could not add profile."))
+    return result
+
+
+@router.post("/robot-profiles/{profile_id}/activate")
+async def robot_profiles_activate(profile_id: str) -> dict[str, Any]:
+    result = await nori_session(operation="switch_profile", profile_id=profile_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=404, detail=result.get("error", "Profile not found."))
+    return result
+
+
+@router.delete("/robot-profiles/{profile_id}")
+async def robot_profiles_delete(profile_id: str) -> dict[str, Any]:
+    result = await nori_session(operation="remove_profile", profile_id=profile_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=409, detail=result.get("error", "Could not remove profile."))
+    return result
 
 
 @router.post("/control/estop")
