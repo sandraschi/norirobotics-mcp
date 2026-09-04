@@ -59,19 +59,27 @@ const fleetPeers = [
 const vrCrossconnects = [
   {
     id: "resonite-mcp",
-    note: "ResoniteLink WebSocket control. Fixture spawner + real-physics-bounce animate — stage a pick-and-place task in VR before running it on hardware.",
+    note: "ResoniteLink WebSocket control. Fixture spawner + real-physics-bounce animate — stage a pick-and-place task in VR before running it on hardware. Uses nori_a3_posed.mesh.json via spawn_mesh.",
   },
   {
     id: "overte-mcp",
-    note: "Open-source metaverse control — where the fixture-spawner/animate/depot pattern was first built and live-verified before porting to the others.",
+    note: "Open-source metaverse control — where the fixture-spawner/animate/depot pattern was first built and live-verified before porting to the others. You saw Overte live.",
   },
   {
     id: "unity3d-mcp",
-    note: "Unity Editor automation via a live TCP bridge — robotics-mcp's primary virtual-robot spawn target.",
+    note: "Unity Editor automation via a live TCP bridge — robotics-mcp's primary virtual-robot spawn target, now real: nori_a3_posed.glb via model depot + spawn_fixture (not a box primitive).",
   },
   {
     id: "godot-mcp",
-    note: "Godot 4 engine control via TCP bridge, plus a real model/texture asset depot with backup/restore.",
+    note: "Godot 4 engine control via TCP bridge, plus a real model/texture asset depot with backup/restore. Same GLB as Unity.",
+  },
+  {
+    id: "mujoco-mcp",
+    note: "MuJoCo physics viewer — local mujoco.viewer.launch_passive from the same URDF (no fleet repo needed, this repo's models/nori_description/ is the source).",
+  },
+  {
+    id: "isaac-mcp",
+    note: "NVIDIA Isaac Sim (Omniverse) — USD import of nori_a3_posed.glb/URDF for sim2real physics twin.",
   },
   {
     id: "vrchat-mcp",
@@ -251,7 +259,8 @@ export function HelpPage() {
               ))}
             </div>
             <p className="text-sm font-semibold text-foreground mb-1">
-              VR crossconnects (virtual robot twins, via robotics-mcp)
+              VR crossconnects — using other fleet repos (virtual twins via
+              robotics-mcp + VR bridges — not standalone in this repo)
             </p>
             <div className="text-sm space-y-1.5">
               {vrCrossconnects.map((p) => (

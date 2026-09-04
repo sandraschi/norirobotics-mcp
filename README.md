@@ -12,7 +12,8 @@
 **MCP server + webapp** for the [Nori Robotics A3](https://www.norirobotics.com/) — a $1,688,
 19-DOF wheeled bimanual home robot (real and virtual). Control it from Claude, watch a live
 3D rig viewer of the A3 right in the webapp, and spawn its virtual twin into Resonite, Overte,
-Godot, Unity3D.
+Godot, Unity3D — using other fleet repos (robotics-mcp + VR bridges, not built into this repo
+alone).
 
 ## What this wraps
 
@@ -72,7 +73,7 @@ itself — see that repo's `robotics.nori_a3` config block and `NoriMcpClient` H
 | [universal-actuator-mcp](https://github.com/sandraschi/universal-actuator-mcp) | Motor/actuator abstraction layer — the eventual home for Feetech-to-QDD actuator-upgrade tooling, a real gap the Hacker News launch thread flagged for the A3's RC-servo arms (see `nori_info(operation="actuator_upgrade")` for the sourced, no-specific-recommendation-yet note). |
 | [bumi-mcp](https://github.com/sandraschi/bumi-mcp) | Closest structural precedent in the fleet: another wheeled consumer robot, specs+OSS-info tools shipped first, physical control gated behind a verified bridge second — the same honest, staged rollout this repo follows. |
 
-**VR crossconnects** (how a Nori A3 gets a virtual twin, via `robotics-mcp`'s
+**VR crossconnects — using other fleet repos** (how a Nori A3 gets a virtual twin via `robotics-mcp` + VR bridges — not standalone; this repo supplies the mesh, the fleet does the spawning):
 `robot_virtual`/`vbot_crud` tools — `platform="unity"` etc.):
 
 | Repo | What it adds |
@@ -88,16 +89,27 @@ platforms in the same session (2026-09), each adapted to that platform's actual 
 same closed-form bounce physics ported four times, verified identical, not four independent
 guesses. See each repo's own `CHANGELOG.md` for the live-verification details.
 
-### How the A3 actually gets spawned into VR
+### How the A3 actually gets spawned into VR — using other fleet repos
 
-This isn't a generic placeholder box standing in for the robot — it's the real A3 mesh.
-`scripts/export_posed_mesh.py` takes the same posed rig the webapp's 3D viewer renders and
-decimates it down to a 26,467-triangle mesh-JSON, sized to fit inline over a WebSocket frame.
-`robotics-mcp`'s `robot_virtual`/`vbot_crud` tools pick that mesh up for `robot_type="nori_a3"`
-and push it live into a running Resonite session through **ResoniteLink's `spawn_mesh`** call —
-a real protocol message, not an OSC hack or a stand-in primitive. The result: open Resonite,
-call the spawn tool, and the actual A3 geometry appears in-world — a virtual twin you can pose,
-inspect, or stage a pick-and-place task against before ever touching the real hardware.
+This isn't a generic placeholder box standing in for the robot — it's the real A3 mesh,
+spawned **via other fleet repos, not this repo alone**. `scripts/export_posed_mesh.py` takes
+the same posed rig the webapp's 3D viewer renders and emits three artefacts: `nori_a3_posed.glb`
+(single flattened mesh — Unity/Overte/Godot import), `nori_a3_rig.glb` (per-body hierarchy),
+and `nori_a3_posed.mesh.json` (26,467-triangle decimated mesh-JSON for `spawn_mesh`). The fleet
+hub `robotics-mcp` `robot_virtual`/`vbot_crud` (`robot_type="nori_a3"`, `platform="resonite"|"overte"|"godot"|"unity"`)
+picks that mesh up and pushes it live:
+
+- **Resonite** — `resonite-mcp` `ResoniteLink.spawn_mesh` (real WebSocket, verified)
+- **Overte** — `overte-mcp` (verified live, you saw it)
+- **Unity3D** — `unity3d-mcp` TCP bridge `import_model` + `spawn_fixture` (now real — `nori_a3_posed.glb` via model depot, not a box primitive)
+- **Godot** — `godot-mcp` TCP bridge + model depot (same GLB)
+- **MuJoCo** — local `mujoco` viewer (`mujoco.viewer.launch_passive`) from the same URDF — no fleet repo needed, this repo's `models/nori_description/` is the source
+- **Isaac Sim** — `isaac-mcp` (NVIDIA Omniverse) USD import of the same `nori_a3_posed.glb`/URDF — physics twin for sim2real
+
+The result: open Resonite/Overte/Unity/Godot, call the fleet spawn tool, and the actual A3
+geometry appears in-world — a virtual twin you can pose, inspect, or stage a pick-and-place
+task against before ever touching the real hardware. This repo supplies the mesh; the fleet
+does the spawning.
 
 ## Quick Install
 
