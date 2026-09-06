@@ -13,6 +13,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { SkillsPage } from "@/pages/SkillsPage";
 import { ToolsPage } from "@/pages/ToolsPage";
 import { ViewerPage } from "@/pages/ViewerPage";
+import { VRPage } from "@/pages/VRPage";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="session" element={<SessionPage />} />
           <Route path="control" element={<ControlPage />} />
           <Route path="viewer" element={<ViewerPage />} />
+          <Route path="vr" element={<VRPage />} />
           <Route path="recording" element={<RecordingPage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="tools" element={<ToolsPage />} />

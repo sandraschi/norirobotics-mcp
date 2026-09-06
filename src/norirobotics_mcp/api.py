@@ -23,6 +23,7 @@ from norirobotics_mcp.server import mcp
 from norirobotics_mcp.tool_control import nori_control
 from norirobotics_mcp.tool_recording import nori_recording
 from norirobotics_mcp.tool_session import nori_session
+from norirobotics_mcp.tool_vr import nori_vr
 from norirobotics_mcp.tools_manifest import MCP_TOOLS
 
 mcp_http = mcp.http_app(path="/")
@@ -121,7 +122,7 @@ async def capabilities() -> dict[str, Any]:
         "mcp_http_path": "/mcp",
         "tools": [t["name"] for t in MCP_TOOLS],
         "ports": {"backend": 11970, "frontend": 11971},
-        "features": {"chat": True, "skills": False, "streaming": False},
+        "features": {"chat": True, "skills": True, "streaming": False, "vr": True},
     }
 
 
@@ -214,12 +215,21 @@ async def session_status() -> dict[str, Any]:
 
 @router.post("/session/connect")
 async def session_connect(force_mock: bool = Query(False)) -> dict[str, Any]:
-    return await nori_session(operation="connect", force_mock=force_mock)
+    result = await nori_session(operation="connect", force_mock=force_mock)
+    activity_log.add(
+        "INFO" if result.get("success") else "ERROR",
+        "session",
+        f"connect: {result.get('message', result.get('error', '?'))}",
+        {"force_mock": force_mock, "robot_kind": result.get("robot_kind")},
+    )
+    return result
 
 
 @router.post("/session/disconnect")
 async def session_disconnect() -> dict[str, Any]:
-    return await nori_session(operation="disconnect")
+    result = await nori_session(operation="disconnect")
+    activity_log.add("INFO", "session", f"disconnect: {result.get('message', '?')}")
+    return result
 
 
 # ── Robot profiles (physical vs. virtual, multi-bot registry) ──────────
@@ -277,22 +287,56 @@ async def robot_profiles_delete(profile_id: str) -> dict[str, Any]:
 
 @router.post("/control/estop")
 async def control_estop() -> dict[str, Any]:
-    return await nori_control(operation="estop")
+    result = await nori_control(operation="estop")
+    activity_log.add("WARNING", "control", f"estop: {result.get('message', result.get('error', '?'))}")
+    return result
 
 
 @router.post("/control/action")
 async def control_action(body: dict[str, Any]) -> dict[str, Any]:
-    return await nori_control(operation="action", targets=body.get("targets", {}), wait=body.get("wait", True))
+    result = await nori_control(operation="action", targets=body.get("targets", {}), wait=body.get("wait", True))
+    activity_log.add(
+        "INFO" if result.get("success") else "ERROR",
+        "control",
+        f"action: {result.get('message', result.get('error', '?'))}",
+        {"targets": body.get("targets", {})},
+    )
+    return result
 
 
 @router.post("/recording/episode_start")
 async def recording_episode_start(body: dict[str, Any]) -> dict[str, Any]:
-    return await nori_recording(operation="episode_start", task=body.get("task"))
+    result = await nori_recording(operation="episode_start", task=body.get("task"))
+    activity_log.add(
+        "INFO" if result.get("success") else "ERROR",
+        "recording",
+        f"episode_start task={body.get('task')!r}: {result.get('message', result.get('error', '?'))}",
+    )
+    return result
 
 
 @router.post("/recording/episode_stop")
 async def recording_episode_stop() -> dict[str, Any]:
-    return await nori_recording(operation="episode_stop")
+    result = await nori_recording(operation="episode_stop")
+    activity_log.add(
+        "INFO" if result.get("success") else "ERROR",
+        "recording",
+        f"episode_stop: {result.get('message', result.get('error', '?'))}",
+    )
+    return result
+
+
+@router.post("/vr")
+async def vr_spawn(body: dict[str, Any]) -> dict[str, Any]:
+    """Spawn/status the Nori VR/physics twin — delegates to nori_vr (other fleet repos do the work)."""
+    result = await nori_vr(operation=body.get("operation", "unity_status"))
+    activity_log.add(
+        "INFO" if result.get("success") else "ERROR",
+        "vr",
+        f"{body.get('operation', 'unity_status')}: {result.get('message', result.get('error', '?'))}",
+        {"platform": result.get("platform"), "spawned": result.get("spawned", False)},
+    )
+    return result
 
 
 @llm_router.get("/providers")
@@ -339,20 +383,79 @@ async def chat_stream(body: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+_CHAT_TIMEOUT_S = 300.0  # cold model load alone can take ~60s (measured 2026-09-06)
+_CHAT_HISTORY_MAX = 20  # last N messages forwarded — full 100-msg history blows context + latency
+_CHAT_MSG_CHARS = 2000  # per-message cap; skill preprompts/system prompts are trimmed, not dropped
+
+
+def _trim_messages(messages: Any) -> list[dict[str, Any]]:
+    """Keep the tail of the history, cap each message — cold starts and 8k-context
+    models cannot swallow 100 full messages plus a 4k skill preprompt."""
+    if not isinstance(messages, list):
+        return []
+    trimmed: list[dict[str, Any]] = []
+    for m in messages[-_CHAT_HISTORY_MAX:]:
+        if not isinstance(m, dict):
+            continue
+        content = m.get("content", "")
+        if isinstance(content, str) and len(content) > _CHAT_MSG_CHARS:
+            content = content[:_CHAT_MSG_CHARS] + "…[trimmed]"
+        trimmed.append({"role": m.get("role", "user"), "content": content})
+    return trimmed
+
+
 @llm_router.post("/chat")
 async def llm_chat(body: dict[str, Any]) -> dict[str, Any]:
     provider = body.get("provider", "ollama")
+    model = body.get("model", "")
     base_urls = {"ollama": "http://127.0.0.1:11434", "lm_studio": "http://127.0.0.1:1234"}
     base = base_urls.get(provider)
     if not base:
+        activity_log.add("ERROR", "chat", f"unknown provider: {provider}")
         return {"error": f"Unknown provider: {provider}"}
-    payload = {"model": body.get("model", ""), "messages": body.get("messages", []), "stream": False}
+    if not model:
+        activity_log.add("ERROR", "chat", "no model selected")
+        return {
+            "error": "No model selected.",
+            "suggestion": "Pick a model in Settings — the provider probe lists what is installed.",
+        }
+    messages = _trim_messages(body.get("messages", []))
+    payload = {
+        "model": model,
+        "messages": messages,
+        "stream": False,
+        "options": {"num_ctx": 8192},
+    }
+    activity_log.add("INFO", "chat", f"chat via {provider}/{model} ({len(messages)} msgs)")
     try:
-        async with httpx.AsyncClient(timeout=60) as c:
+        async with httpx.AsyncClient(timeout=_CHAT_TIMEOUT_S) as c:
             r = await c.post(f"{base}/v1/chat/completions", json=payload)
-            return r.json()
+            if r.status_code != 200:
+                detail = r.text[:500]
+                activity_log.add("ERROR", "chat", f"{provider}/{model} HTTP {r.status_code}: {detail}")
+                return {
+                    "error": f"LLM HTTP {r.status_code}: {detail}",
+                    "suggestion": "Model name may be wrong, or the provider is still loading it — check Settings.",
+                }
+            data = r.json()
+            activity_log.add("INFO", "chat", f"chat ok via {provider}/{model}")
+            return data
+    except TimeoutError as e:
+        activity_log.add("ERROR", "chat", f"{provider}/{model} timed out after {_CHAT_TIMEOUT_S:.0f}s: {e}")
+        return {
+            "error": f"LLM timed out after {_CHAT_TIMEOUT_S:.0f}s.",
+            "suggestion": (
+                "Cold model load takes ~60s and thinking models reason long — just send again, "
+                "the model is warm now. If it persists, VRAM is full: unload an idle model "
+                "(Ollama: POST /api/generate {model, keep_alive: 0}) or quit LM Studio's loaded model."
+            ),
+        }
     except Exception as e:
-        return {"error": str(e)}
+        activity_log.add("ERROR", "chat", f"{provider}/{model} failed: {e}")
+        return {
+            "error": str(e),
+            "suggestion": "Is the provider running? Ollama :11434, LM Studio :1234 — see Settings.",
+        }
 
 
 def build_app() -> FastAPI:

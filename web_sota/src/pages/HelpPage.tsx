@@ -358,6 +358,10 @@ export function HelpPage() {
                 ["POST /api/session/connect", "Open a session (real or mock)"],
                 ["POST /api/control/estop", "Emergency stop"],
                 ["POST /api/recording/start", "Start an episode recording"],
+                [
+                  "POST /api/vr",
+                  "VR spawn/status {operation} (unity/overte/godot/mujoco/isaac)",
+                ],
               ].map(([path, desc]) => (
                 <div
                   key={path}

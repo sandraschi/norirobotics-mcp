@@ -232,9 +232,12 @@ def main() -> None:
     if world_parts_local:
         # A handful of visual geoms (root sensor/shell parts) end up attached directly to the
         # world body - MuJoCo welds a fixed-jointed root URDF link straight into its parent
-        # when it has no joint of its own. Attach them to the scene's actual root frame
-        # ("world", trimesh's default base_frame) instead of silently dropping them.
-        scene.add_geometry(trimesh.util.concatenate(world_parts_local), node_name="world")
+        # when it has no joint of its own. They must NOT be named "world": trimesh's glTF
+        # exporter special-cases a node named like the base frame ("world") and writes it
+        # with NO matrix, silently dropping the scene-level ZUP_TO_YUP for exactly this node -
+        # the base rendered on its side while every articulated node looked fine (proven
+        # 2026-09-06 by parsing the GLB JSON: node "world" matrix None, wheels ZUP-correct).
+        scene.add_geometry(trimesh.util.concatenate(world_parts_local), node_name="chassis_root")
 
     for body_id in range(1, model.nbody):  # body 0 is the world
         name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, body_id) or f"body_{body_id}"

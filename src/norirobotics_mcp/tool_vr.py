@@ -101,10 +101,12 @@ async def nori_vr(
             mesh = paths["glb"]
             if not mesh.exists():
                 return _error(f"Mesh not found at {mesh} — run `uv run python scripts/export_posed_mesh.py` first.")
-            # Try fleet bridge via HTTP (robotics-mcp vbot or unity3d-mcp directly)
-            # Ports from WEBAPP_PORTS: unity3d-mcp ~10850, overte ~10860, godot ~10870, robotics-mcp hub ~10900
+            # Try fleet bridge via HTTP (robotics-mcp vbot or unity3d-mcp directly).
+            # Ports from WEBAPP_PORTS.md (verified 2026-09-06, not guessed):
+            # unity3d-mcp backend 10831, overte-mcp backend 11110,
+            # godot-mcp backend 10993, isaac-mcp backend 11049.
             # We probe localhost:PORT/health first, then attempt spawn.
-            fleet_ports = {"unity": 10850, "overte": 10860, "godot": 10870}
+            fleet_ports = {"unity": 10831, "overte": 11110, "godot": 10993}
             port = fleet_ports.get(platform)
             spawned = False
             details: dict[str, Any] = {"mesh": str(mesh), "size_bytes": mesh.stat().st_size if mesh.exists() else 0}
@@ -203,8 +205,8 @@ async def nori_vr(
             glb = paths["glb"]
             if not glb.exists():
                 return _error(f"GLB not found at {glb} — run export_posed_mesh.py first.")
-            # Isaac Sim USD via isaac-mcp if present
-            isaac_port = 10920
+            # Isaac Sim USD via isaac-mcp if present (backend 11049 per WEBAPP_PORTS.md)
+            isaac_port = 11049
             details = {"glb": str(glb), "size_bytes": glb.stat().st_size}
             try:
                 import httpx

@@ -67,8 +67,10 @@ GET /api/health, GET /api/status (uptime, tool_count, session), GET /api/capabil
 GET /api/hero, GET /api/tools, GET /api/skills, GET /api/session, POST /api/session/connect,
 POST /api/session/disconnect, GET /api/robot-profiles + /active, POST /api/robot-profiles,
 POST /api/robot-profiles/{id}/activate, DELETE /api/robot-profiles/{id},
-POST /api/control/*, POST /api/recording/*, GET /api/logs, GET/POST /api/llm/providers+chat,
-POST /api/chat + /api/chat/stream (fleet-standard aliases, non-streaming today).
+POST /api/control/*, POST /api/recording/*, POST /api/vr (nori_vr spawn/status per platform),
+GET /api/logs, GET/POST /api/llm/providers+chat,
+POST /api/chat + /api/chat/stream (fleet-standard aliases, non-streaming today;
+server trims to last 20 msgs/2000 chars, 300s timeout for cold model load).
 
 ## Honesty notes for agents
 

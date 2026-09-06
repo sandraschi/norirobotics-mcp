@@ -1,5 +1,29 @@
 # Changelog
 
+## [Unreleased] — 2026-09-06 (chat timeout, activity log, VR page, base orientation)
+
+### Fixed — four user-reported bugs, all reproduced before fixing
+- Chat timeouts (even small Ollama models): root cause was a full GPU — Ollama held
+  `muse-glimmer-kquant` 27.9B (16.4 GB VRAM) while LM Studio held its own model, so new
+  loads queued for 120s+. Freed via `POST /api/generate {keep_alive: 0}` (reversible).
+  Measured: llama3.2:3b cold reply took 59s, just under the old 60s backend timeout.
+  Backend hardened: timeout 60s→300s, history trimmed to last 20 msgs/2000 chars each,
+  `options.num_ctx: 8192`, timeout/HTTP/connection errors now return distinct `error` +
+  `suggestion` instead of a bare string. Verified live: `/api/chat` → "OK" via llama3.2:3b.
+- Empty Logging/Inbox pages: `activity_log.add` was never called anywhere — session
+  connect/disconnect, control action/estop, recording start/stop, chat attempts, and VR
+  spawn now all log. Verified: `GET /api/logs` returns entries.
+- No VR spawning pages: new `VRPage.tsx` (Unity/Overte/Godot/MuJoCo/Isaac cards + Resonite
+  note, status/spawn buttons, GLB downloads, result panels), `POST /api/vr` → `nori_vr()`,
+  route + nav entry. Also fixed invented `tool_vr` bridge ports to real `WEBAPP_PORTS.md`
+  values (unity 10831, overte 11110, godot 10993, isaac 11049).
+- 3D viewer base on its side: `scripts/export_posed_mesh.py` attached root-welded geoms to
+  a node literally named `"world"`, and trimesh's glTF exporter special-cases a node named
+  like the base frame — writing it with NO matrix, silently dropping `ZUP_TO_YUP` for exactly
+  that node (proven by parsing the GLB JSON: node `world` matrix None, wheels ZUP-correct).
+  Renamed to `chassis_root`, regenerated `nori_a3_rig.glb` (22 nodes), byte-verified the new
+  node carries the ZUP matrix. No mechanic required.
+
 ## [Unreleased] — 2026-09-04 (assfix: endpoints, lint, type gates)
 
 ### Fixed — assfix 2026-09-04 (fleet SOTA gaps)
