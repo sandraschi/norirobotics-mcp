@@ -8,7 +8,9 @@ MCP_TOOLS: list[dict[str, Any]] = [
     {
         "name": "nori_info",
         "description": "Specs, SDK links, XLeRobot lineage, HN community reaction, actuator-upgrade notes, fleet peers. No session required.",
-        "params": {"operation": "info|specs|sdk_links|predecessor|community|actuator_upgrade|fleet_peers"},
+        "params": {
+            "operation": "info|specs|sdk_links|predecessor|community|actuator_upgrade|fleet_peers|skills_marketplace"
+        },
     },
     {
         "name": "nori_session",

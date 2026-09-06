@@ -13,7 +13,7 @@ const TABS: { id: Tab; label: string }[] = [
 const toolsList = [
   {
     name: "nori_info",
-    op: "specs | sdk_links | predecessor | community | actuator_upgrade | fleet_peers",
+    op: "specs | sdk_links | predecessor | community | actuator_upgrade | fleet_peers | skills_marketplace (STUB)",
     desc: "Static reference data, no session",
   },
   {

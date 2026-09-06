@@ -1,6 +1,6 @@
 # Tool Reference
 
-norirobotics-mcp ships **6 tools**: 4 portmanteaus + `nori_help` + `nori_shutdown`.
+norirobotics-mcp ships **7 tools**: 5 portmanteaus + `nori_help` + `nori_shutdown`.
 
 ## `nori_info(operation, ...)`
 
@@ -15,6 +15,7 @@ No session required. Static reference data.
 | `community` | Hacker News launch-thread praise/criticism |
 | `actuator_upgrade` | RC-servo-vs-QDD actuator upgrade note (CubeMars/MyActuator, no fabricated BOM) |
 | `fleet_peers` | Related fleet MCPs (`robotics-mcp`, `teleoperator-mcp`, `vla-mcp`, `universal-actuator-mcp`, `bumi-mcp`) |
+| `skills_marketplace` | **STUB** (`stub:true`, `live:false`) — Nori's user-provided robot-skills site status: announced on norirobotics.com, not live as of 2026-09-06; sharing today = HF Hub via Nori-Lab, Nori-Backend closed |
 
 ## `nori_session(operation, ...)`
 
@@ -84,6 +85,14 @@ Every response carries `robot_kind`/`profile_name` from the connected session's 
 these before trusting an episode as real-hardware data. Note: `nori_sdk`'s own `record()` call has
 no metadata hook to embed this into the on-disk LeRobot dataset itself (verified against the
 installed SDK signature) — the provenance fields are guaranteed on the MCP response only.
+
+## `nori_vr(operation, ...)`
+
+VR/physics twin spawning via other fleet repos (this repo supplies the mesh, the fleet
+spawns it). Operations: `unity_spawn`, `unity_status`, `overte_spawn`, `godot_spawn`,
+`mujoco_view` (local, `models/nori_description/` URDF), `isaac_export`. Returns the real
+`nori_a3_posed.glb`/mesh-JSON/URDF path plus `spawned:true` when a fleet bridge is reachable,
+else `mock:true` with import instructions. Unity is real (model depot + `spawn_fixture`).
 
 ## `nori_help()`
 

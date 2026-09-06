@@ -20,9 +20,11 @@ control loop only, all policy inference off-board. 4x 720p cameras, 2D LiDAR, du
 
 ## Tools
 
-### nori_info(operation="info"|"specs"|"sdk_links"|"predecessor"|"community"|"actuator_upgrade"|"fleet_peers")
+### nori_info(operation="info"|"specs"|"sdk_links"|"predecessor"|"community"|"actuator_upgrade"|"fleet_peers"|"skills_marketplace")
 No session required. Returns static reference data sourced from
-mcp-central-docs/projects/norirobotics-mcp/RESEARCH.md.
+mcp-central-docs/projects/norirobotics-mcp/RESEARCH.md. `skills_marketplace` is a STUB
+(`stub:true`/`live:false`): Nori's user-provided robot-skills site is announced on
+norirobotics.com but not live as of 2026-09-06; sharing today = HF Hub via Nori-Lab.
 
 ### nori_session(operation="connect"|"disconnect"|"status"|"wait_ready|list_profiles|add_profile|switch_profile|remove_profile", force_mock=False, profile_id, name, kind, ...)
 Opens/closes/inspects the one process-wide session and manages the multi-bot profile registry

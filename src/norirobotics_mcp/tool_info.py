@@ -54,6 +54,7 @@ async def nori_info(
         community         — Hacker News launch-thread reaction (praise + criticism, summarized)
         actuator_upgrade  — HN-sourced note on RC-servo-vs-QDD actuator upgrade path (no fabricated BOM)
         fleet_peers       — sandraschi robotics-mcp fleet members relevant to Nori integration
+        skills_marketplace — STUB: Nori's user-provided robot-skills site status (not live as of 2026-09-06)
 
     ## Return Format
     {"success": bool, "message": str, ...operation-specific data}
@@ -114,8 +115,39 @@ async def nori_info(
                 "peers": FLEET_PEERS,
             }
 
+        if op == "skills_marketplace":
+            return {
+                "success": True,
+                "message": (
+                    "STUB — Nori's user-provided robot-skills site is announced but not live "
+                    "(checked 2026-09-06). This response tracks what exists so the stub can "
+                    "become a real list/download/install op when Nori ships it."
+                ),
+                "stub": True,
+                "live": False,
+                "checked": "2026-09-06",
+                "status": "announced, not launched",
+                "website": "https://www.norirobotics.com/ — 'Skills Marketplace' homepage section only "
+                "('Train your Nori at home, share its skills anywhere.'), no public URL or app behind it.",
+                "sharing_today": [
+                    "Nori-Lab (github.com/Nori-Robotics/Nori-Lab) Upload flow pushes LeRobot datasets "
+                    "to Hugging Face Hub in one click.",
+                    "Dataset upload, training dispatch, and policy download go through Nori-Backend "
+                    "(NORI_BACKEND_URL), which is NOT public — no repo, no docs.",
+                ],
+                "repos": [
+                    "github.com/Nori-Robotics/Nori-Lab (web UI: calibrate/teleop/record/train/replay)",
+                    "github.com/Nori-Robotics/Nori-Protocol (JSON wire contract, not skills)",
+                ],
+                "discord": "https://discord.gg/NgKhhxQny7 — quiet as of 2026-09-06.",
+                "roadmap": "When live: list/download/install published policies here; watch Nori-Lab releases "
+                "and Discord announcements. Until then, 'skills' in this repo means Anthropic-side "
+                "assistant skills (GET /api/skills), not Nori robot skills.",
+            }
+
         return _error_response(
-            f"Unknown operation: {operation}. Use: info, specs, sdk_links, predecessor, community, actuator_upgrade, fleet_peers."
+            f"Unknown operation: {operation}. Use: info, specs, sdk_links, predecessor, community, "
+            "actuator_upgrade, fleet_peers, skills_marketplace."
         )
     except Exception as e:
         return _error_response(str(e), exc=e)
