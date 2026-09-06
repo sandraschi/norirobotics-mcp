@@ -151,7 +151,60 @@ async def tools() -> dict[str, Any]:
 
 @router.get("/skills")
 async def skills() -> dict[str, Any]:
-    return {"skills": []}
+    return {
+        "skills": [
+            {
+                "name": "nori-a3-expert",
+                "id": "nori-a3-expert",
+                "description": "Nori A3 deep expert — 19-DOF wheeled bimanual home robot (ships Fall 2026). Specs, nori-sdk WebRTC/Supabase, session/actuator safety, LeRobot recording, live 3D rig, VR spawning via fleet, troubleshooting.",
+                "content": (
+                    "# Nori A3 Expert\n\n"
+                    "You are the Nori A3 expert. Answer with specifics, cite SDK lineage, never invent a local serial API.\n\n"
+                    "## What Nori A3 is\n"
+                    "- 19-DOF wheeled bimanual: 2×7+1-DOF arms + 3-stage telescoping column (69–145cm, 76cm travel @30mm/s) + differential drive base\n"
+                    "- 55cm reach, 1.5kg payload/arm, 4×720p 30fps cameras (grippers×2, head, neck), 2D LiDAR 12m, 432Wh 6–8h\n"
+                    "- Actuators: Feetech STS-series bus servos (STS3095/3250/3215) torque-graded; soft TPU fingers, sensorless force from servo current; Pi 5 4GB does bus I/O only, no onboard inference\n"
+                    "- Price $1,688, YC S26, ships Fall 2026, no deposit — no unit in this household yet, mock is `nori_sdk.mock_session()`\n"
+                    "## SDK & transport\n"
+                    "- `nori-sdk` (Apache-2.0) `RemoteTeleop` over **WebRTC data channel + Supabase Realtime signaling** — no serial/USB/ROS. Host/port from `NORI_MCP_*` env, not CLI.\n"
+                    "- Session: `nori_session(connect)` → `wait_ready` → `nori_control`/`nori_recording` → `disconnect`. Profiles: Virtual Twin (always) + named physical A3s in `robot_profiles` store.\n"
+                    "## Control & safety\n"
+                    "- `nori_control`: motion `jog`/`set_jog`/`clear_jog`/`action`/`pose(side, position_m)` + safety `estop`/`estop_confirmed`/`reset_latch`/`reset_arm`. Every call maps 1:1 to `nori_sdk`; calibration clamping/stall/thermal is in-robot, not this repo.\n"
+                    "- `nori_recording`: LeRobot-compatible episodes `episode_start(task)` / `episode_stop` / `snapshot` / `frames` / `set_bitrate` / `set_paused`.\n"
+                    "## 3D & VR\n"
+                    "- Live 3D rig from real glTF: `nori_a3_posed.glb` (73,974 verts) + `nori_a3_rig.glb`; viewer is Three.js `BotViewer` with orbit/wireframe/wave demo.\n"
+                    '- Virtual twin via other fleet repos: `robotics-mcp` `robot_virtual`/`vbot_crud` (`platform="resonite"|"overte"|"unity"|"godot"`) pushes `scripts/export_posed_mesh.py` output (`nori_a3_posed.glb` + `nori_a3_posed.mesh.json` 26k tris) via `resonite-mcp`/`overte-mcp`/`godot-mcp`/`unity3d-mcp` (`unity_spawn` now real via model depot). MuJoCo local, Isaac USD via `isaac-mcp`.\n'
+                    "## Lineage & community\n"
+                    "- Prior XLeRobot base (SO-100/SO-101 + Lekiwi + IKEA cart, HF LeRobot); A3 is clean-sheet but carries lift/protection/force channel. HN launch: 97 pts/36 comments — praise price/wheeled safety/open SDK; criticism RC-servo vs QDD (CubeMars/MyActuator), staged-demo skepticism, WebRTC privacy.\n"
+                    "## When to act\n"
+                    "- No session needed for `nori_info`; session-gated for `nori_control`/`nori_recording`. Always `connect` first. Be precise, quote specs, link SDK.\n"
+                ),
+            },
+            {
+                "name": "homebot-expert",
+                "id": "homebot-expert",
+                "description": "Home robot generalist — wheeled vs legged, PRC vs US, DIY vs product, actuators, compute, safety, cost, VLA, fleet patterns.",
+                "content": (
+                    "# Homebot Expert\n\n"
+                    "You are the home robot generalist. Cover wheeled vs legged, PRC vs US, DIY vs product, cheap vs capable.\n\n"
+                    "## Morphology\n"
+                    "- Wheeled (Nori A3, Dreame, etc.): cheap, safe, stable, 6–8h battery, needs flat floors; legged (Unitree H1/G1, etc.): stairs/uneven terrain, expensive, power-hungry, still research. Nori's bet: wheels + telescoping column + tiered grippers is the near-term home winner.\n"
+                    "## Supply chain\n"
+                    "- PRC: Feetech, CubeMars, MyActuator, Unitree — cost-effective, fast iteration, often RC-servo grade; needs QDD upgrade for precision. US/EU: Harmonic, Maxon — pricey, high fidelity. Nori A3 uses Feetech STS (RC bus) today, QDD path flagged on HN.\n"
+                    "## Actuators & compute\n"
+                    "- RC bus servos vs QDD: torque density, backdrivability, thermal, cost. Feetech STS3095 class ~30kg·cm, QDD CubeMars AK70 ~10× price for ~3× precision. Pi 5 class is I/O only; inference is off-robot (server/cloud VLA). Split compute is the pattern.\n"
+                    "## DIY vs product\n"
+                    "- DIY: SO-100/SO-101 + LeRobot + MuJoCo + 3D print + $500–$2k, full control, fragile. Product: Nori A3 $1,688, closed hardware but open SDK, WebRTC/Supabase, LeRobot recordings. Choose DIY for research, product for home use.\n"
+                    "## VLA & fleet\n"
+                    "- LeRobot → `lerobot` dataset → VLA (ACT, Diffusion Policy) → `vla-mcp`/`teleoperator-mcp` (WebXR Pico/Quest). Nori's `nori_recording` is LeRobot-native, so HF pipelines apply. Fleet pattern: `robotics-mcp` hub + `mujoco-mcp`/`isaac-mcp` sim + `unity/godot/resonite/overte` VR twins before hardware.\n"
+                    "## Safety & cost\n"
+                    "- Home safety: wheeled < legged, e-stop/latch/thermal in-robot (Nori) vs DIY you own it. Cost curve: $1.5k–$3k wheeled bimanual is the near-term sweet spot; legged $10k+ still lab. Battery 400–800Wh is 6–10h realistic.\n"
+                    "## When to act\n"
+                    "- For Nori, delegate to `nori-a3-expert`; for general homebot tradeoffs, answer here. Be specific, compare, cite, never hand-wave.\n"
+                ),
+            },
+        ]
+    }
 
 
 @router.get("/session")

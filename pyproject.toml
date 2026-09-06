@@ -61,6 +61,7 @@ ignore = ["S104", "S310", "S311", "B008", "B904", "E501", "RUF012", "S101", "S11
 "scripts/**" = ["T20"]
 "tests/**" = ["T20"]
 "models/**" = ["T20"]
+"src/norirobotics_mcp/api.py" = ["RUF001"]
 
 [tool.ruff.format]
 quote-style = "double"
