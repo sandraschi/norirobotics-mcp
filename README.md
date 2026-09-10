@@ -145,6 +145,8 @@ See [INSTALL.md](INSTALL.md) for the drag-and-drop `.mcpb` path and full options
 | [The Affordable Home Robot Paradigm](docs/HOME_ROBOT_PARADIGM.md) | Why wheels-not-legs, a telescoping column, tiered end effectors, and split onboard/server compute look like the near-term future of home robotics — Nori A3 as the case study |
 | [Field Review](docs/REVIEW.md) | Pros/cons/verdict — extols the wheels+telescoping-lift+open-SDK bet, and names the concrete gaps (no charging station, light payload, RC-grade actuators, no torso pitch to reach the back of a cabinet) |
 | [Actuator Alternatives](docs/ACTUATOR_ALTERNATIVES.md) | Feetech vs. CubeMars/MyActuator/Damiao/RobStride QDD actuators — real specs/prices, why QDD gives force feedback nearly for free, torque-vs-speed for a homebot vs. a running dogbot, China sourcing/customs, and why "use a Unitree motor" isn't quite the right framing |
+| [DIY A3 Equivalent](docs/DIY_A3_EQUIVALENT.md) | Full from-scratch build matching or exceeding every A3 spec — real torque math, telescoping-lift alternatives, 2-finger vs. 3-finger grippers, using this repo's own official (but non-watertight) mesh package plus `blender-mcp`/`qcad-mcp` to reconstruct real printable parts, costed Match/Exceed tiers |
+| [DIY Base Station](docs/DIY_BASE_STATION.md) | Closing the no-charging-station gap — Roomba's real IR-homing + wiping-contact mechanism vs. a pogo-pin design (real current/spring-force/cycle-life specs), mechanical alignment, and what a wheeled base like A3's would actually need to add |
 | [Architecture](docs/ARCHITECTURE.md) | Session model, ports, data flow |
 | [Configuration](docs/CONFIGURATION.md) | Env vars, config options |
 | [Tool Reference](docs/TOOLS.md) | All 9 MCP tools |
