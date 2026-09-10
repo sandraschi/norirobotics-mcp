@@ -1,5 +1,39 @@
 # Changelog
 
+## [Unreleased] — 2026-09-10 (nori-sdk 1.1.0: navigation, perception, policy streaming)
+
+### Added — wrapped a real SDK capability gap, verified against the installed package
+- `nori-sdk` 1.1.0 (pinned here since 2026-09-01) shipped named waypoint navigation,
+  LiDAR/IMU/perception sensor streams, and policy streaming — none of it was wrapped until now.
+  Confirmed the gap directly against `RemoteTeleop`'s real method list (not assumed from a
+  changelog) before building anything.
+- `src/norirobotics_mcp/tool_navigation.py` (new): `nori_navigation(operation=...)` —
+  remember/delete/list/navigate_to_waypoint, goto_pose, cancel/await_navigation, status. Every
+  response carries `robot_kind`/`profile_name`.
+- `src/norirobotics_mcp/tool_perception.py` (new): `nori_perception(operation=...)` —
+  lidar_scan/imu_sample/perceive/configure_sensor_streams/status. Verified `lidar_scan`/
+  `imu_sample`/`perceive` correctly return `None` against `mock_session()` (MockRobot never
+  publishes sensor frames — documented SDK behavior, not a gap).
+- `tool_control.py`: three new operations — `policy_stream`, `policy_stream_status`,
+  `set_leader_action` (external-policy/leader-arm control injection, ties into `vla-mcp`).
+- Two real bugs caught and fixed during implementation, both before shipping:
+  1. `perceive()` is a **synchronous** method on `RemoteTeleop` despite sitting next to async
+     methods (`inspect.iscoroutinefunction` confirms `False`) — awaiting it throws
+     `TypeError: object NoneType can't be used in 'await' expression'` against the mock.
+  2. The `_jsonable()` helper (copied across all `tool_*.py` files) didn't recurse into
+     list/tuple elements — `NavigationStatus.waypoints` (a tuple of `WaypointSummary` objects)
+     silently degraded to a `str()` repr instead of a real JSON array. Fixed in
+     `tool_navigation.py`/`tool_perception.py`/`tool_control.py`; `tool_session.py`/
+     `tool_recording.py` don't currently hit this (no tuple-valued fields in their responses)
+     so left as-is per surgical-changes — worth a fleet-wide sweep for the same copy-pasted
+     helper if a future SDK field introduces one there too.
+- Also fixed while touching these exact files: `nori_help`'s hardcoded tool count/list was
+  already stale (said "5 tools", missing `nori_vr` — pre-existing gap from 2026-09-05/06, not
+  from this pass); `docs/TOOLS.md`/`README.md`/`docs/ARCHITECTURE.md`'s tool counts and
+  diagrams updated to the real current total (9 tools).
+- Explicitly out of scope this pass: webapp visualization (waypoint map, LiDAR point-cloud
+  view) — a genuinely separate, larger UI undertaking than wrapping the SDK calls.
+
 ## [Unreleased] — 2026-09-06 (chat timeout, activity log, VR page, base orientation)
 
 ### Fixed — four user-reported bugs, all reproduced before fixing

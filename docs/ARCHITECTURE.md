@@ -9,9 +9,12 @@ Claude / MCP client
 +-------------------------+
 |     norirobotics-mcp    |
 |  nori_info               (static knowledge, no session)
-|  nori_session             connect/disconnect/status/wait_ready
-|  nori_control              jog/set_jog/action/pose/estop/reset_*
+|  nori_session             connect/disconnect/status/wait_ready + robot profile registry
+|  nori_control              jog/set_jog/action/pose/estop/reset_* + policy_stream/leader
+|  nori_navigation           waypoints + Nav2 goal lifecycle (nori-sdk 1.1.0)
+|  nori_perception           LiDAR/IMU/vision-stack reads (nori-sdk 1.1.0)
 |  nori_recording             record/snapshot/frames/bitrate/pause
+|  nori_vr                   Unity/Overte/Godot/MuJoCo/Isaac spawn via fleet repos
 +-------------------------+
         |
         v  robot_profiles.py picks a named profile ("Virtual Twin" default, or

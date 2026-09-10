@@ -10,6 +10,8 @@ from norirobotics_mcp import session_state
 from norirobotics_mcp.knowledge import FLEET_PEERS, NORI_HERO
 from norirobotics_mcp.tool_control import nori_control
 from norirobotics_mcp.tool_info import nori_info
+from norirobotics_mcp.tool_navigation import nori_navigation
+from norirobotics_mcp.tool_perception import nori_perception
 from norirobotics_mcp.tool_recording import nori_recording
 from norirobotics_mcp.tool_session import nori_session
 from norirobotics_mcp.tool_vr import nori_vr
@@ -19,11 +21,14 @@ mcp = FastMCP(
     instructions=(
         "Nori Robotics A3 (19-DOF wheeled bimanual home robot, ships Fall 2026): "
         "use nori_info(operation=...) for specs/SDK/lineage/community facts (no session needed), "
-        "nori_session(operation='connect') to open a control session (real robot when "
-        "NORI_MCP_SUPABASE_* env vars are set, otherwise nori_sdk's own mock_session()), "
-        "then nori_control for motion/safety, nori_recording for LeRobot-format episode capture, "
-        "and nori_vr for Unity/Overte/Godot/MuJoCo/Isaac spawning via other fleet repos. "
-        "Always call nori_session(operation='connect') before nori_control/nori_recording."
+        "nori_session(operation='connect') to open a control session (real robot when the active "
+        "profile is physical, otherwise nori_sdk's own mock_session() — see "
+        "nori_session(operation='list_profiles')), then nori_control for motion/safety/policy-"
+        "streaming, nori_navigation for named waypoint navigation, nori_perception for LiDAR/IMU/"
+        "vision-stack reads, nori_recording for LeRobot-format episode capture, and nori_vr for "
+        "Unity/Overte/Godot/MuJoCo/Isaac spawning via other fleet repos. Always call "
+        "nori_session(operation='connect') before nori_control/nori_navigation/nori_perception/"
+        "nori_recording."
     ),
 )
 
@@ -74,6 +79,24 @@ mcp.tool(
         "properties": {"success": {"type": "boolean"}, "message": {"type": "string"}},
         "required": ["success", "message"],
     },
+)(nori_navigation)
+
+mcp.tool(
+    annotations={"readOnlyHint": False, "openWorldHint": True},
+    output_schema={
+        "type": "object",
+        "properties": {"success": {"type": "boolean"}, "message": {"type": "string"}},
+        "required": ["success", "message"],
+    },
+)(nori_perception)
+
+mcp.tool(
+    annotations={"readOnlyHint": False, "openWorldHint": True},
+    output_schema={
+        "type": "object",
+        "properties": {"success": {"type": "boolean"}, "message": {"type": "string"}},
+        "required": ["success", "message"],
+    },
     app=True,
 )(nori_vr)
 
@@ -88,14 +111,16 @@ mcp.tool(
     app=True,
 )
 async def nori_help() -> dict[str, Any]:
-    """NORI_HELP — quick reference for norirobotics-mcp's five tools and typical call order.
+    """NORI_HELP — quick reference for norirobotics-mcp's seven operational tools (excludes
+    this tool and nori_shutdown, matching this list's own pre-existing convention) and
+    typical call order.
 
     Returns:
         success (bool), message (str), tools (list of {name, purpose}), typical_flow (list of str).
     """
     return {
         "success": True,
-        "message": "norirobotics-mcp: 5 tools, session-gated motion/recording + VR.",
+        "message": "norirobotics-mcp: 7 tools, session-gated motion/navigation/perception/recording + VR.",
         "tools": [
             {
                 "name": "nori_info",
@@ -103,11 +128,19 @@ async def nori_help() -> dict[str, Any]:
             },
             {
                 "name": "nori_session",
-                "purpose": "connect / disconnect / status / wait_ready. Real robot when NORI_MCP_SUPABASE_* is set, else nori_sdk mock_session().",
+                "purpose": "connect / disconnect / status / wait_ready, plus the multi-bot profile registry (list_profiles / add_profile / switch_profile / remove_profile). Real robot when the active profile is physical, else nori_sdk mock_session().",
             },
             {
                 "name": "nori_control",
-                "purpose": "jog / set_jog / clear_jog / action / pose (motion) + estop / estop_confirmed / reset_latch / reset_arm (safety). Requires an open session.",
+                "purpose": "jog / set_jog / clear_jog / action / pose (motion) + estop / estop_confirmed / reset_latch / reset_arm (safety) + policy_stream / policy_stream_status / set_leader_action (external-policy/leader-arm control). Requires an open session.",
+            },
+            {
+                "name": "nori_navigation",
+                "purpose": "remember_waypoint / delete_waypoint / list_waypoints / navigate_to_waypoint / goto_pose / cancel_navigation / await_navigation / status — named waypoint navigation (nori-sdk 1.1.0). Requires an open session.",
+            },
+            {
+                "name": "nori_perception",
+                "purpose": "lidar_scan / imu_sample / perceive / configure_sensor_streams / status — opt-in LiDAR/IMU/vision-stack reads (nori-sdk 1.1.0). Requires an open session.",
             },
             {
                 "name": "nori_recording",
@@ -123,6 +156,8 @@ async def nori_help() -> dict[str, Any]:
             "nori_session(operation='connect')",
             "nori_session(operation='wait_ready')",
             "nori_control(operation='action', targets={...})",
+            "nori_navigation(operation='navigate_to_waypoint', name='kitchen')",
+            "nori_perception(operation='configure_sensor_streams', lidar_hz=5.0)",
             "nori_recording(operation='episode_start', task='pour water into cup')",
             "nori_recording(operation='episode_stop')",
             "nori_session(operation='disconnect')",

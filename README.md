@@ -44,8 +44,13 @@ narrower, agent-oriented view (session status, tool calls, recording state).
 - Open/close/inspect a live control session, and manage named robot profiles — Virtual Twin
   plus any number of registered physical A3s, each response explicit about which one produced
   it (`nori_session`)
-- Jog, move-to-target, Cartesian pose control, e-stop and fault reset (`nori_control`)
+- Jog, move-to-target, Cartesian pose control, e-stop/fault reset, and external-policy/leader-arm
+  streaming (`nori_control`)
+- Named waypoint navigation — remember/navigate to a saved destination, Nav2 goal lifecycle
+  (`nori_navigation`, new in nori-sdk 1.1.0)
+- Opt-in LiDAR/IMU streams and vision-stack world-state reads (`nori_perception`, new in nori-sdk 1.1.0)
 - Start/stop episode recording in LeRobot-compatible format, video snapshot/bitrate control (`nori_recording`)
+- VR/physics twin spawning — Unity/Overte/Godot/MuJoCo/Isaac via other fleet repos (`nori_vr`)
 - **Live 3D viewer of the A3** right in the webapp — the correctly-posed rig, rendered from a
   real glTF/GLB export (73,974 verts / 134,656 tris), with wireframe toggle, a wave-demo
   animation, and orbit lighting (`web_sota/src/pages/ViewerPage.tsx`, Three.js-based `BotViewer`)
@@ -128,6 +133,7 @@ See [INSTALL.md](INSTALL.md) for the drag-and-drop `.mcpb` path and full options
 - "Open a Nori session and check the current telemetry."
 - "Start an episode recording for pouring water into a cup, then stop it after I confirm."
 - "Register a physical A3 profile for the office unit and switch to it."
+- "Save this spot as a waypoint called 'kitchen', then navigate back to it."
 
 ## Documentation
 
@@ -139,7 +145,7 @@ See [INSTALL.md](INSTALL.md) for the drag-and-drop `.mcpb` path and full options
 | [The Affordable Home Robot Paradigm](docs/HOME_ROBOT_PARADIGM.md) | Why wheels-not-legs, a telescoping column, tiered end effectors, and split onboard/server compute look like the near-term future of home robotics — Nori A3 as the case study |
 | [Architecture](docs/ARCHITECTURE.md) | Session model, ports, data flow |
 | [Configuration](docs/CONFIGURATION.md) | Env vars, config options |
-| [Tool Reference](docs/TOOLS.md) | All 6 MCP tools |
+| [Tool Reference](docs/TOOLS.md) | All 9 MCP tools |
 | [Development](docs/DEVELOPMENT.md) | Contributing, local setup |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues |
 

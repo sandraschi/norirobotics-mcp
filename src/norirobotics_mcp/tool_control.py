@@ -13,6 +13,7 @@ from typing import Any
 from fastmcp import Context
 
 from norirobotics_mcp import session_state
+from norirobotics_mcp.robot_profiles import provenance_fields
 
 logger = logging.getLogger("norirobotics-mcp.control")
 
@@ -32,6 +33,7 @@ def _error_response(message: str, exc: Exception | None = None) -> dict[str, Any
 
 _MOTION_OPS = {"jog", "set_jog", "clear_jog", "action", "pose"}
 _SAFETY_OPS = {"estop", "estop_confirmed", "reset_latch", "reset_arm"}
+_POLICY_OPS = {"policy_stream", "policy_stream_status", "set_leader_action"}
 
 
 async def nori_control(
@@ -46,6 +48,8 @@ async def nori_control(
     duration: float | None = None,
     wait: bool = True,
     timeout: float | None = None,
+    policy_action: str | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """NORI_CONTROL — drive joints/gripper and manage the e-stop/reset safety latch.
 
@@ -68,15 +72,29 @@ async def nori_control(
         reset_latch      — clear the e-stop latch after a confirmed stop.
         reset_arm        — reset a single arm's fault state. Args: arm ("left"|"right").
 
+    Operations (policy/leader streaming — new in nori-sdk 1.1.0, 2026-09-01):
+        policy_stream        — drive the robot's policy streamer. Args: policy_action
+                               ("start"|"stop"|"status" — named distinctly from this tool's own
+                               `operation` param to avoid confusion with the "action" motion verb
+                               above), extra (dict, e.g. {"dest": "laptop"} for "start").
+        policy_stream_status — the last policy_stream_status frame seen (property read, no
+                               SDK call — the ONLY way to check liveness is polling this or
+                               calling policy_stream(policy_action="status")).
+        set_leader_action    — absolute pose from a physical leader arm, ONE frame not a stream.
+                               Args: targets (dict[str, float] — reuses the same param as 'action' above).
+
     ## Return Format
-    {"success": bool, "message": str, ...operation-specific data}. On failure: error, error_type,
-    and — for motion ops issued without a session — a suggestion to connect first.
+    {"success": bool, "message": str, "robot_kind": "physical"|"virtual", "profile_name": str|None
+    (policy/leader ops only), ...operation-specific data}. On failure: error, error_type, and —
+    for motion ops issued without a session — a suggestion to connect first.
 
     ## Examples
     nori_control(operation="estop")
     nori_control(operation="action", targets={"left_gripper": 0.5})
     nori_control(operation="pose", side="left", position_m=[0.3, 0.1, 0.2])
     nori_control(operation="reset_arm", arm="left")
+    nori_control(operation="policy_stream", policy_action="start", extra={"dest": "laptop"})
+    nori_control(operation="set_leader_action", targets={"left_arm_shoulder_pitch": 12.5})
     """
     op = operation.lower().strip()
     logger.info("nori_control(%s)", op)
@@ -131,16 +149,61 @@ async def nori_control(
             result = robot.reset_arm(arm)
             return {"success": True, "message": f"{arm} arm fault state reset.", "result": _jsonable(result)}
 
+        if op == "policy_stream":
+            if not policy_action:
+                return {
+                    "success": False,
+                    "message": "policy_stream requires 'policy_action' ('start'|'stop'|'status').",
+                    "error": "policy_stream requires 'policy_action'.",
+                    **provenance_fields(),
+                }
+            kwargs = {"timeout": timeout} if timeout is not None else {}
+            result = await robot.policy_stream(policy_action, **kwargs, **(extra or {}))
+            return {
+                "success": True,
+                "message": f"policy_stream({policy_action!r}) executed.",
+                "result": _jsonable(result),
+                **provenance_fields(),
+            }
+
+        if op == "policy_stream_status":
+            result = robot.policy_stream_status
+            return {
+                "success": True,
+                "message": "Policy stream status." if result is not None else "No policy_stream_status seen yet.",
+                "result": _jsonable(result),
+                **provenance_fields(),
+            }
+
+        if op == "set_leader_action":
+            if not targets:
+                return {
+                    "success": False,
+                    "message": "set_leader_action requires 'targets' (dict[str, float]).",
+                    "error": "set_leader_action requires 'targets'.",
+                    **provenance_fields(),
+                }
+            robot.set_leader_action(targets)
+            return {"success": True, "message": "Leader action frame sent.", **provenance_fields()}
+
         return _error_response(
-            f"Unknown operation: {operation}. Motion: {sorted(_MOTION_OPS)}. Safety: {sorted(_SAFETY_OPS)}."
+            f"Unknown operation: {operation}. Motion: {sorted(_MOTION_OPS)}. Safety: {sorted(_SAFETY_OPS)}. "
+            f"Policy: {sorted(_POLICY_OPS)}."
         )
     except Exception as e:
         return _error_response(str(e), exc=e)
 
 
 def _jsonable(value: Any) -> Any:
-    if value is None or isinstance(value, (str, int, float, bool, list, dict)):
+    """Recurses into list/tuple/dict elements — see tool_navigation.py's copy of this
+    helper for the concrete bug this fixes (a tuple-of-objects field elsewhere silently
+    degraded to a str() repr with the non-recursing version)."""
+    if value is None or isinstance(value, (str, int, float, bool)):
         return value
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
     if hasattr(value, "model_dump"):
         return value.model_dump()
     if hasattr(value, "__dict__"):

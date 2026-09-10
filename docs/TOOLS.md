@@ -1,6 +1,6 @@
 # Tool Reference
 
-norirobotics-mcp ships **7 tools**: 5 portmanteaus + `nori_help` + `nori_shutdown`.
+norirobotics-mcp ships **9 tools**: 7 portmanteaus + `nori_help` + `nori_shutdown`.
 
 ## `nori_info(operation, ...)`
 
@@ -40,7 +40,8 @@ as real-hardware data; nothing else in the response shape guarantees that distin
 ## `nori_control(operation, ...)`
 
 Requires an open session. Motion ops: `jog`, `set_jog`, `clear_jog`, `action`, `pose`. Safety
-ops: `estop`, `estop_confirmed`, `reset_latch`, `reset_arm`.
+ops: `estop`, `estop_confirmed`, `reset_latch`, `reset_arm`. Policy/leader ops (new in nori-sdk
+1.1.0): `policy_stream`, `policy_stream_status`, `set_leader_action`.
 
 | Operation | Key args |
 |---|---|
@@ -53,6 +54,51 @@ ops: `estop`, `estop_confirmed`, `reset_latch`, `reset_arm`.
 | `estop_confirmed` | `timeout` (float) |
 | `reset_latch` | *(none)* |
 | `reset_arm` | `arm` ("left"\|"right") |
+| `policy_stream` | `policy_action` ("start"\|"stop"\|"status"), `extra` (dict, e.g. `{"dest": "laptop"}`) |
+| `policy_stream_status` | *(none)* — property read, no SDK call |
+| `set_leader_action` | `targets` (dict[str, float]) — reuses `action`'s param, one frame not a stream |
+
+`policy_stream`/`policy_stream_status`/`set_leader_action` responses carry `robot_kind`/
+`profile_name`; the four pre-existing motion/safety ops don't (not retrofitted in this pass).
+
+## `nori_navigation(operation, ...)`
+
+Requires an open session. New in nori-sdk 1.1.0 (2026-09-01) — named waypoint navigation (Nav2
+goals under the hood). Every response carries `robot_kind`/`profile_name`.
+
+| Operation | Key args | Effect |
+|---|---|---|
+| `remember_waypoint` | `name` | Save the robot's current pose under `name` (reusing a name replaces it) |
+| `delete_waypoint` | `name` | Delete a saved destination. Refused while a goal is active |
+| `list_waypoints` | | List destinations saved against the active map |
+| `navigate_to_waypoint` | `name` | Start ONE Nav2 goal to a saved destination. **Moves the robot.** |
+| `goto_pose` | `side`, `position_m`, `orientation_xyzw` (optional), `wait` | Cartesian gripper pose via on-board IK |
+| `cancel_navigation` | `goal_id` (optional) | Cancel the active goal, optionally only if it matches `goal_id` |
+| `await_navigation` | `goal_id` (required) | Wait for `goal_id` to reach a terminal state, without polling |
+| `status` (default) | | Fresh `NavigationStatus` snapshot |
+
+Verified against the installed `nori_sdk` package: `NavigationStatus.waypoints` is a tuple of
+`WaypointSummary` objects — the tool's `_jsonable()` helper recurses into list/tuple elements
+specifically because a non-recursing version silently degraded this field to a `str()` repr
+instead of a real JSON array (caught during implementation, fixed before shipping).
+
+## `nori_perception(operation, ...)`
+
+Requires an open session. New in nori-sdk 1.1.0 — opt-in LiDAR/IMU streams and the vision
+stack's world-state snapshot. Every response carries `robot_kind`/`profile_name`.
+
+| Operation | Key args | Effect |
+|---|---|---|
+| `lidar_scan` | | Most recent `/scan` sample, or `null` if the feed is off/silent |
+| `imu_sample` | | Most recent `/imu/data` sample, or `null` if the feed is off/silent |
+| `perceive` | | Latest vision-stack world-state, or `null` if none has arrived |
+| `configure_sensor_streams` | `lidar_hz`, `imu_hz`, `lidar_max_points` (at least one required) | Turn LiDAR/IMU feeds on/off/up |
+| `status` (default) | | Effective stream settings + whether ROS sees a publisher on each |
+
+`lidar_scan`/`imu_sample`/`perceive` correctly return `null` against `nori_sdk.mock.mock_session()`
+— `MockRobot` never publishes sensor frames, so this is expected, verified behavior, not a gap.
+`perceive()` is a **synchronous** method on `RemoteTeleop` (confirmed via
+`inspect.iscoroutinefunction`) despite sitting next to async methods — the wrapper does not await it.
 
 ## `nori_recording(operation, ...)`
 

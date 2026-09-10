@@ -31,8 +31,40 @@ MCP_TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "nori_control",
-        "description": "Motion (jog/set_jog/action/pose) + safety (estop/reset). Requires an open session.",
-        "params": {"operation": "str", "payload": "dict", "targets": "dict", "side": "str"},
+        "description": "Motion (jog/set_jog/action/pose) + safety (estop/reset) + policy/leader streaming "
+        "(policy_stream/policy_stream_status/set_leader_action). Requires an open session.",
+        "params": {
+            "operation": "str",
+            "payload": "dict",
+            "targets": "dict",
+            "side": "str",
+            "policy_action": "start|stop|status",
+            "extra": "dict",
+        },
+    },
+    {
+        "name": "nori_navigation",
+        "description": "Named waypoint navigation (nori-sdk 1.1.0): remember/delete/list/navigate_to a "
+        "saved destination, goto_pose, cancel/await a Nav2 goal. Requires an open session.",
+        "params": {
+            "operation": "remember_waypoint|delete_waypoint|list_waypoints|navigate_to_waypoint|goto_pose|cancel_navigation|await_navigation|status",
+            "name": "str",
+            "side": "str",
+            "position_m": "list[float]",
+            "goal_id": "str",
+        },
+    },
+    {
+        "name": "nori_perception",
+        "description": "Opt-in LiDAR/IMU/vision-stack reads (nori-sdk 1.1.0). Requires an open session. "
+        "lidar_scan/imu_sample/perceive return null until configure_sensor_streams enables the feed "
+        "and a real robot is publishing.",
+        "params": {
+            "operation": "lidar_scan|imu_sample|perceive|configure_sensor_streams|status",
+            "lidar_hz": "float",
+            "imu_hz": "float",
+            "lidar_max_points": "int",
+        },
     },
     {
         "name": "nori_recording",
