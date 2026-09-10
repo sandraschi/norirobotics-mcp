@@ -222,3 +222,35 @@ EU market at meaningful scale. None of the three looks like a fridge in five yea
 five-year question isn't "how ubiquitous," it's "which region's home robots, if any, cross from
 novelty into a real, visible-but-still-minority category first" - and on the numbers above,
 China gets there first, the US second, the EU last.
+
+### The other axis: form factor, not just region
+
+Whatever share of "home robot" adoption does materialize in five years won't split evenly
+between fully bipedal humanoids (Unitree H2-class, Optimus-style) and wheeled/non-humanoid
+designs like A3's own bet - and the real numbers say bipeds are the minority form factor to bet
+against crossing 50%, not just this doc's own wheels-not-legs argument saying so. As of 2025,
+**wheel-drive designs already hold 62.4% of the broader "humanoid" robot market; fully bipedal
+systems are the 37.6% minority**, even though bipeds are growing faster (57.1% CAGR)
+([market share data](https://www.rootsanalysis.com/humanoid-robot-market)). Closing a 24-point
+gap to cross into majority share within five years, on top of the adoption friction above, is a
+real stretch - "at most half" for bipedal humanoids specifically is a defensible ceiling, not a
+pessimistic guess.
+
+**The uncanny-valley argument earlier in this doc isn't just theory - real survey work backs it
+directly.** Participants in home-humanoid-robot studies described the robots as "creepy" and
+"unsettling," **explicitly citing the black visor-style face masks common on new-generation
+humanoids** - a design language Optimus, Figure, and Unitree's own H-series bipeds all share -
+while non-humanoid/specialized robots were called "less intrusive" and "more discreet"
+([survey findings](https://spectrum.ieee.org/home-humanoid-robots-survey);
+[systematic review of uncanny-valley trust effects](https://arxiv.org/pdf/2505.05543)). Highly
+anthropomorphic designs measurably produce more discomfort and lower use-intention than moderate
+or low-anthropomorphism ones in the same research. This is a concrete, citable design detail, not
+an abstract fear of robots in general.
+
+**Where bipedal humanoids do land real deployment, it's likely to be eldercare and assisted
+living first, not the living room.** ABI Research's own framing ties near-term humanoid demand to
+aging-population structural pressure in developed regions, with adoption starting industrial and
+extending into healthcare/assisted-living before general households. That's the same pattern
+already showing up in China's push (commercial/eldercare-adjacent deployment ahead of household
+deployment) - institutional adoption, not literally "bought for the kitchen," is where the
+bipedal-humanoid share is most likely to actually show up first.
