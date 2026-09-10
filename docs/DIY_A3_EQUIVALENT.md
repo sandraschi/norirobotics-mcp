@@ -131,48 +131,56 @@ upgrade, not just a bigger number. Requires a different mounting bracket (these 
 QDD modules, not Feetech's rectangular servo horn pattern) and 24–48V wiring vs. the rest of the
 arm's 12V bus — a real integration task, not a drop-in swap.
 
-## The telescoping lift: three real alternatives, ranked by fidelity to A3's own mechanism
+## The telescoping lift: what A3 actually uses, and two real alternatives
 
 This is the actual missing piece — XLeRobot/Lekiwi mounts its arms at a **fixed** height on an
 IKEA cart. Nori A3's whole capability multiplier (per `HOME_ROBOT_PARADIGM.md`) is that the column
 moves, through the real, measured **700mm commanded / 720mm physical**, 3-stage travel documented
-above. Three real mechanisms exist at DIY-accessible cost, trading fidelity to A3's own design
-against simplicity:
+above.
 
-**1. Repurposed electric standing-desk column (cheapest, least faithful to A3's mechanism).**
-Standing desks use the same *category* of mechanism — nested-tube telescoping linear actuators —
-sold at real volume because millions of desks use them, which is exactly why they're cheap here.
+**A3's own paper says directly what the mechanism is** — not a guess, a quote
+([arXiv:2605.16537](https://arxiv.org/html/2605.16537)):
+
+> "A three-stage steel telescoping column, of the type used for height-adjustable desks and
+> comparable to YOR's, replaces the fixed-stroke ball screw of the prior version."
+
+Two real things fall out of that: A3's lift **is** a commodity standing-desk-category column, not
+a bespoke robotics part dressed up to look like one — the DIY option below isn't an approximation
+of A3's mechanism, it's the same category the shipping robot actually uses. And Nori's own earlier
+prototype used a **ball screw** first and moved away from it — the precision alternative below was
+tried and superseded, not overlooked. ("YOR" is quoted as a comparison point in the paper but
+doesn't match any lift-column brand found in this research pass — LINAK, TiMOTION, Uplift,
+Progressive Desk, and Firgelli were all checked directly; worth resolving before treating it as a
+sourcing lead rather than repeating it as fact.)
+
+**1. Repurposed electric standing-desk column — this is what A3 itself uses, not just a
+lookalike.**
 - Individual linear actuators (12–18V, 16–18" stroke): **~$80/unit on eBay**, rated 220–600 lbs
   lift capacity each ([Firgelli's DIY column guide](https://www.firgelliauto.com/blogs/standing-desks/diy-standing-desk-choosing-the-right-telescopic-column-lift))
   — wildly over-specced for an arm assembly's weight, which is the point: massive margin at low
   cost, furniture-industry economics instead of robotics-industry economics.
 - A full DIY dual-actuator build (structural tube + 2 actuators + controller) runs **$175–400** in
   parts, 5–6 hours of build time ([DIY standing desk build log](https://www.davidgunter.com/2020/07/23/diy-electric-standing-desk/)).
-- Downside: most off-the-shelf desk columns are 2-stage, not A3's 3-stage, and don't natively give
-  you a clean 0.5x mimic relationship — you're approximating the travel range, not the mechanism.
+- Most off-the-shelf desk columns are 2-stage, not A3's 3-stage, and don't natively give a clean
+  0.5x mimic relationship out of the box — matching A3's exact 3-stage/0.5x ratio still takes
+  picking (or gearing) the right column, not just buying "a" standing-desk actuator.
 
-**2. Ballscrew/lead-screw linear rail + NEMA17 stepper (best precision-per-dollar, single-stage).**
+**2. Ballscrew/lead-screw linear rail + NEMA17 stepper — the road not taken by A3, for good
+reason to know about.**
 A 200mm SFU1605 ballscrew rail with a NEMA17 stepper runs **~$78/unit**
 ([eBay listing](https://www.ebay.de/itm/187709575827)) — the exact mechanism category 3D
-printers and CNC machines already use, so tooling, drivers (any stepper driver board), and
-community knowledge are abundant. Stack 3–4 of these (or use longer-throw rails) to build a
-genuine multi-stage carriage matching A3's 700mm travel, with a timing belt or gear train enforcing
-the 0.5x stage ratio directly (matching the real mimic relationship above) rather than
-approximating it with independent actuators. Quieter and more precisely positionable than a
-standing-desk actuator, at a comparable or lower cost per stage.
+printers and CNC machines already use, so tooling, drivers, and community knowledge are abundant.
+It's genuinely more precise and quieter than a desk-column actuator — which makes it worth
+understanding *why A3's own team moved away from it*: a fixed-stroke ball screw ties stowed height
+to a single screw's length, while nested telescoping stages (option 1) decouple stowed height from
+extended reach — exactly the design rationale the paper gives for the switch. A DIY build
+optimizing purely for precision could still choose this path, but should go in knowing it's
+solving a different problem than the one A3's own engineers decided mattered more.
 
-**3. A genuine 3-stage nested-tube column, scratch-built (most faithful to A3, most work).**
-Building the actual mechanism A3 uses — three nested tube stages, one driven, two others geared
-off it via cable/belt at the measured 0.5x ratio — is a real machining/fabrication project
-(linear bearings or rollers at each stage interface, a drive belt or cable-and-pulley system for
-the mimic stages). This is the option that most faithfully reproduces the *specific* mechanism
-rather than an equivalent one — appropriate if the goal is genuinely "duplicate A3," not just
-"get to 700mm of reach."
-
-**Recommendation**: option 2 (ballscrew rail) is the best default for most DIY builders — cheap,
-precise, quiet, and buildable with tools/skills the 3D-printing and CNC community already has.
-Option 3 is the right call only if faithfully reproducing A3's exact mechanism (not just its
-travel range) is itself the goal.
+**Recommendation**: build the standing-desk-column version (option 1) — it's cheaper, it's what
+the actual robot uses, and Nori's own move away from ball-screw is a real, sourced reason to
+prefer it over the more precise-sounding alternative rather than assuming precision wins by
+default.
 
 ## Grippers: A3's own 2-finger claw, vs. a real 3-finger upgrade
 
