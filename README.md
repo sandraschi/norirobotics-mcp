@@ -147,6 +147,7 @@ See [INSTALL.md](INSTALL.md) for the drag-and-drop `.mcpb` path and full options
 | [Actuator Alternatives](docs/ACTUATOR_ALTERNATIVES.md) | Feetech vs. CubeMars/MyActuator/Damiao/RobStride QDD actuators — real specs/prices, why QDD gives force feedback nearly for free, torque-vs-speed for a homebot vs. a running dogbot, China sourcing/customs, and why "use a Unitree motor" isn't quite the right framing |
 | [DIY A3 Equivalent](docs/DIY_A3_EQUIVALENT.md) | Full from-scratch build matching or exceeding every A3 spec — real torque math, telescoping-lift alternatives, 2-finger vs. 3-finger grippers, using this repo's own official (but non-watertight) mesh package plus `blender-mcp`/`qcad-mcp` to reconstruct real printable parts, costed Match/Exceed tiers |
 | [DIY Base Station](docs/DIY_BASE_STATION.md) | Closing the no-charging-station gap — Roomba's real IR-homing + wiping-contact mechanism vs. a pogo-pin design (real current/spring-force/cycle-life specs), mechanical alignment, and what a wheeled base like A3's would actually need to add |
+| [DIY Project Plan](docs/DIY_PROJECT_PLAN.md) | The actual build sheet — BOM with named EU/Shenzhen vendors, maker tools, time-per-phase estimates. Honest up front: won't save much money, but it's a genuinely great build |
 | [Architecture](docs/ARCHITECTURE.md) | Session model, ports, data flow |
 | [Configuration](docs/CONFIGURATION.md) | Env vars, config options |
 | [Tool Reference](docs/TOOLS.md) | All 9 MCP tools |
