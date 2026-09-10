@@ -79,6 +79,28 @@ than the rounded marketing spec sheet:
   3-finger design (see below) would be a deliberate *upgrade* over A3's own choice, not a
   duplication of it.
 
+**An industry pattern worth naming, not just Nori's**: publishing a simplified public description
+package (real kinematics, decimated visual meshes, no manufacturing detail) while keeping full
+CAD internal and sharing it with owners only on a repair basis is standard practice across the
+robotics industry — Unitree, Universal Robots, and Franka Emika's public ROS description packages
+follow the same shape. Nori's own paper names the boundary directly rather than leaving it
+implicit ("they do not fully open-source the mechanical package"), and separately confirms
+replacement CAD is supplied to owners specifically for parts that break — gated by ownership and
+a documented failure, not a paywall or an upsell tier. This is the concrete mechanism behind
+`HOME_ROBOT_PARADIGM.md`'s "Open Software, Closed(ish) Hardware" section — the SDK really is
+Apache-2.0 open; the mechanical package was always the "(ish)," and now we know specifically how.
+
+**Worth being clear-eyed about how much that "(ish)" is actually protecting.** Every specific
+mechanism this research has directly verified turned out to be simple and commodity, not deeply
+proprietary: the actuators are stock Feetech RC servos, the lift is literally a repurposed
+standing-desk column (A3's own paper says so), and the gripper is a basic geared two-finger claw.
+None of this is washing-machine-level engineering — a real washing machine involves drum-balance
+control, motor efficiency tuning, water-valve safety systems, and real certification-heavy
+complexity. A3's mechanical design doesn't carry that kind of depth, and the fact that a DIY build
+matching or exceeding its spec is genuinely tractable (the rest of this doc) is itself evidence of
+that — a closed(ish) stance here reads more like standard liability/support-scoping than
+protection of a hard-to-replicate design.
+
 ## Design targets
 
 | Spec | Nori A3 | This build's target |
