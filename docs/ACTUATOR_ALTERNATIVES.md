@@ -97,6 +97,29 @@ not remotely a drop-in swap — different voltage (24–48V vs. Feetech's 12V), 
 communication protocol (CAN/EtherCAT vs. TTL serial), different mounting, and a firmware/protocol
 integration effort on top.
 
+## So the "advanced motor" isn't the moat either — it's already commodity
+
+It's tempting to read the table above as "the big humanoid/quadruped companies have secret motor
+technology, and buying a CubeMars/RobStride/Damiao unit gets you a taste of it." **The evidence in
+this doc actually argues the opposite.** These are independent vendors selling genuine QDD
+actuators with real integrated force feedback, at retail, to anyone, for $78–400/unit — and
+RobStride markets its top-end unit explicitly as **"Unitree-compatible."** A third party can only
+credibly sell into that positioning if the actual hardware gap between "what a large humanoid/
+quadruped maker puts in its product" and "what anyone can order this week" is small. If the
+actuator itself were the real moat, that market wouldn't exist in this form.
+
+What's left, once the actuator technology itself is commodity: **controls software** (the gait/
+manipulation tuning that turns "has a QDD actuator" into "can backflip" or "can fold a shirt
+reliably" — this is where real engineering effort still concentrates, and it's the one thing you
+can't order from Shenzhen), **manufacturing scale and vertical integration** (owning your own
+actuator fab is a cost/supply-security advantage over buying at retail markup, not a technology
+one), and **system-level reliability at volume** (thermal management, QA, failure rates across
+thousands of units — a capital-intensive, boring problem unrelated to any single component being
+secret). Nori A3 illustrates the same pattern in miniature at a smaller price point: it didn't
+even reach for the commodity QDD tier — it used cheap RC servos and pushed the gap to software
+(current-sensing force estimation, actuator-protection) instead. Same move, smaller scale: when a
+hardware differentiator dissolves, the remaining leverage is software, not a better motor.
+
 ## The "use Unitree's own motors" idea, specifically
 
 Unitree does sell some standalone actuators — the `GO-M8010-6` (an older Go1-era motor) is

@@ -154,3 +154,71 @@ home (legs, a human face) to afford the parts that do (two capable arms, real re
 mobility, a price a household can actually pay). Nori A3 is the clearest current example of a
 robot built end-to-end on that bet - not the only one, and not necessarily the final answer,
 but a genuinely useful data point for what "solved" might actually look like in this category.
+
+## Five Years Out: Fridge-Level Ubiquity, or Still a Novelty?
+
+Speculative, and grounded in real numbers rather than vibes - here's the honest read across the
+three markets that matter most, as of this research pass (2026).
+
+**No region gets to fridge-level ubiquity by 2031. The arithmetic alone rules it out.** Global
+humanoid/home-robot shipment forecasts, even the optimistic ones, put annual unit shipments in
+the range of ~115,000 (2027) rising toward ~195,000/year by the end of most forecast windows
+([market forecast roundup](https://www.researchandmarkets.com/reports/6091822/humanoid-robot-market-forecasts)).
+Fridges are in roughly 99% of US households alone - upwards of 130 million units in one country.
+A market shipping under 200,000 units a year *globally* is not five years from fridge-level
+saturation anywhere; it's five years from "a real, growing, still-niche category," which is a
+very different claim. The home-robot-specific market segment forecast - $1.58B (2025) to $8.79B
+(2031), 33.8% CAGR - is a genuinely fast growth rate applied to a genuinely small base
+([Intel Market Research](https://www.intelmarketresearch.com/home-humanoid-robot-2025-2032-58-5534)).
+
+**The best real analog for adoption speed isn't smartphones - it's robot vacuums, and that
+analog is sobering.** Roomba shipped in 2002. Twenty-four years later, US robot-vacuum household
+penetration sits around **22%** ([Euromonitor estimate via Vacuum Wars](https://vacuumwars.com/robot-vacuum-market-trends-are-traditional-vacuums-falling-behind/)),
+with growth projected to roughly double over the next five years from a smaller base in some
+estimates - still nowhere near fridge-level after nearly a quarter-century, for a product that is
+dramatically simpler, cheaper ($150-500), and lower-stakes than a $1,688+ bimanual manipulator
+with arms and a lift column operating near people and pets. If the simplest, most mature home
+robot category available hasn't hit ubiquity in 24 years, five years is not the right horizon to
+expect it from a category that's meaningfully harder and more expensive.
+
+**China is the one region where this could look different - not because of consumer demand, but
+because of the state.** China's 15th Five-Year Plan (2026-2030) elevates robotics and "embodied
+intelligence" from a niche subsidy target to what policy documents call the "connective tissue"
+of the entire economic modernization strategy - over $20 billion in subsidies (grants, loans, tax
+credits, state-backed VC) in 2024-2025 alone, plus $26 billion+ in city-level investment funds
+from Beijing, Shenzhen, and others specifically targeting humanoid robotics
+([Merics report](https://merics.org/en/report/embodied-ai-chinas-ambitious-path-transform-its-robotics-industry)).
+The explicit national target is **100,000 humanoid robots deployed by 2027**
+([Caixin Global](https://www.caixinglobal.com/2026-06-10/china-targets-10000-humanoid-robots-in-commercial-use-by-end-2026-102452656.html)),
+with a dedicated standardization body already issuing national technical standards as of March
+2026. That's a real, top-down, capital-backed push closer in shape to how China scaled EVs and
+solar than to organic consumer-appliance adoption - it will very plausibly produce the fastest
+*visible growth curve* of the three regions, concentrated first in commercial/eldercare-adjacent
+deployment rather than households, and 100,000 units is still a rounding error against China's
+household count. Fast-growing and state-championed is a different claim from ubiquitous.
+
+**The EU is the region most likely to lag, and it's regulatory, not cultural.** A home robot with
+cameras, microphones, and autonomous arms operating near people now has to clear at least five
+overlapping compliance frameworks landing in almost the same 18-month window: the Machinery
+Regulation (effective January 2027), AI Act high-risk-system conformity assessment (obligations
+from August 2027, and robots-as-safety-components of Annex-I-covered machinery are a likely
+high-risk classification route), the revised Product Liability Directive (December 2026, which
+now treats embedded *and* standalone software as a "product" for liability purposes), and Cyber
+Resilience Act reporting (September 2026)
+([Bird & Bird overview](https://www.twobirds.com/en/insights/2026/smart-robots,-dual-regulations-navigating-the-ai-act-and-machinery-compliance),
+[Freshfields global snapshot](https://www.freshfields.com/en/our-thinking/blogs/technology-quotient/embodied-ai-decoded-1-a-global-snapshot-of-the-rules-reshaping-robotics-and-emb-102n888)).
+None of this is unreasonable regulation for a category of product that is new - but it's real
+cost and real time that a US-market launch doesn't have to clear first, and it lands in exactly
+the next 18 months, not on some distant future timeline.
+
+**The honest five-year picture, by region**: the US remains the venture-and-early-adopter market
+it is today, plausibly reaching low-single-digit-percent household penetration in the most
+optimistic case - closer to where robot vacuums were maybe eight to ten years into their own
+curve, not twenty-four. China shows the fastest unit-growth and the most visible public
+deployment, driven by state policy rather than organic demand, concentrated outside the home
+before it's inside it. The EU lags both, not from lack of interest but from compliance overhead
+that is landing right now, in 2026-2027, before most home-robot categories have even reached the
+EU market at meaningful scale. None of the three looks like a fridge in five years. The right
+five-year question isn't "how ubiquitous," it's "which region's home robots, if any, cross from
+novelty into a real, visible-but-still-minority category first" - and on the numbers above,
+China gets there first, the US second, the EU last.
