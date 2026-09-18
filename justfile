@@ -43,9 +43,7 @@ mcpb-pack:
 # --- Native / Tauri (config scaffolded; actual build via nsis-build skill) ---
 
 build-native:
-    $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
-    Set-Location '{{justfile_directory()}}\native'
-    powershell.exe -NoProfile -File '{{justfile_directory()}}\native\build.ps1'
+    $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"; Set-Location '{{justfile_directory()}}\native'; powershell.exe -NoProfile -File '{{justfile_directory()}}\native\build.ps1'
 
 # Build the PyInstaller backend .exe and copy to Tauri resources
 build-sidecar:
