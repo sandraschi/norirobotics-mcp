@@ -19,7 +19,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-_DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+from .data_dir import data_dir
+
+_DATA_DIR = data_dir()
 _PROFILES_PATH = _DATA_DIR / "robot_profiles.json"
 _ACTIVE_PATH = _DATA_DIR / "robot_profile_active.json"
 
