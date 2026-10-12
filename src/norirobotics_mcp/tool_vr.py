@@ -9,6 +9,7 @@ call is never a dead fake — the artefacts are real and importable.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -116,7 +117,7 @@ async def nori_vr(
 
                     base = f"http://127.0.0.1:{port}"
                     # Check health
-                    r = httpx.get(f"{base}/health", timeout=2.0)
+                    r = await asyncio.to_thread(httpx.get, f"{base}/health", timeout=2.0)
                     if r.status_code == 200:
                         details["bridge_health"] = (
                             r.json()
@@ -137,7 +138,7 @@ async def nori_vr(
                     import httpx
 
                     base = f"http://127.0.0.1:{fleet_ports[platform]}"
-                    r = httpx.get(f"{base}/health", timeout=2.0)
+                    r = await asyncio.to_thread(httpx.get, f"{base}/health", timeout=2.0)
                     ok = r.status_code == 200
                     return {
                         "success": ok,
@@ -211,7 +212,7 @@ async def nori_vr(
             try:
                 import httpx
 
-                r = httpx.get(f"http://127.0.0.1:{isaac_port}/health", timeout=2.0)
+                r = await asyncio.to_thread(httpx.get, f"http://127.0.0.1:{isaac_port}/health", timeout=2.0)
                 if r.status_code == 200:
                     return {
                         "success": True,
