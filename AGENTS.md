@@ -23,6 +23,9 @@ ships Fall 2026) — every session-gated tool defaults to nori_sdk's own `mock_s
   `mcp-central-docs/projects/norirobotics-mcp/RESEARCH.md` for the sourced research pass)
 - `src/norirobotics_mcp/session_state.py` — the one place mock-vs-real session choice happens
 - `pyproject.toml` — build config and entry points
+- `assets/nori_description/urdf/nori_a3.urdf` — 46-link, 45-joint URDF (exported to OpenUSD at `../isaac-mcp/scenes/nori_a3_sim.usda`)
+- `../isaac-mcp/pipeline/08_nori_a3_active_inference_arm.py` — 7-DoF Laplace Active Inference compliant arm controller for Nori A3
+- `docs/DIY_A3_EQUIVALENT.md` — engineering math & BOM comparison with `rust-saschirob-mcp` (`saschibot`)
 
 ## Quick Ref
 

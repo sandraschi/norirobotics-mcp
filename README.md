@@ -109,7 +109,7 @@ picks that mesh up and pushes it live:
 - **Unity3D** — `unity3d-mcp` TCP bridge `import_model` + `spawn_fixture` (now real — `nori_a3_posed.glb` via model depot, not a box primitive)
 - **Godot** — `godot-mcp` TCP bridge + model depot (same GLB)
 - **MuJoCo** — local `mujoco` viewer (`mujoco.viewer.launch_passive`) from the same URDF — no fleet repo needed, this repo's `models/nori_description/` is the source
-- **Isaac Sim** — `isaac-mcp` (NVIDIA Omniverse) USD import of the same `nori_a3_posed.glb`/URDF — physics twin for sim2real
+- **Isaac Sim** — `isaac-mcp` (NVIDIA Omniverse) USD import of the same `nori_a3_posed.glb`/URDF (`isaac-mcp/scenes/nori_a3_sim.usda` — 46 links, 45 joints, full rest-pose FK, oriented STL proxy collision boxes, and `PhysicsDriveAPI`, plus `isaac-mcp/pipeline/08_nori_a3_active_inference_arm.py` 7-DoF Active Inference controller via `run_active_inference(robot="nori_a3")`) — physics twin for sim2real
 
 The result: open Resonite/Overte/Unity/Godot, call the fleet spawn tool, and the actual A3
 geometry appears in-world — a virtual twin you can pose, inspect, or stage a pick-and-place
